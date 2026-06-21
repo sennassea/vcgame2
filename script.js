@@ -573,11 +573,12 @@ function renderDefenseScreen() {
 
   if (battleInfoKicker) battleInfoKicker.textContent = '수비 모드 · 골드 파밍';
   if (monsterNameDisplay) {
-    monsterNameDisplay.textContent = '투구 결과에 따라 골드를 수집하세요!';
+    monsterNameDisplay.classList.add('is-hidden');
   }
   if (battleGuideText) {
-    battleGuideText.textContent =
-      '골드를 모아 공격 선수를 업그레이드하고 다시 도전하세요.';
+    battleGuideText.innerHTML =
+      '투구 결과에 따라 골드를 수집할 수 있습니다.<br />' +
+      '골드를 모아 선수의 능력치를 강화하고 다시 도전하세요!';
   }
   if (hitRewardGuide) hitRewardGuide.textContent = `+${rewards.hit}G`;
   if (catchRewardGuide) catchRewardGuide.textContent = `+${rewards.catch}G`;
@@ -629,6 +630,7 @@ function renderAttackScreen() {
   }
 
   if (monsterNameDisplay) {
+    monsterNameDisplay.classList.remove('is-hidden');
     monsterNameDisplay.innerHTML = `${config.monsterName} <span class="monster-level">Lv . ${config.monsterLevel}</span>`;
   }
 
@@ -690,6 +692,7 @@ function setMonsterImage(state) {
 
   battleMonster.src = MONSTER_IMAGES[state] ?? MONSTER_IMAGES.normal;
   battleMonster.classList.toggle('is-hit', state === 'hit');
+  battleMonster.classList.toggle('is-crying', state === 'crying');
 }
 
 function showDamagePopup(damage, isCritical) {
