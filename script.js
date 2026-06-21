@@ -1,14 +1,12 @@
+const STORAGE_KEY = 'baseballMonsterHunterSave';
+
 const PAGE_CONFIG = {
-  startPage: 'index.html',
-  representativePage: 'representative.html',
-  settingsPage: null,
+  // 경기 화면을 만들면 아래 값을 'game.html' 또는 실제 경기 화면 이름으로 바꾸면 됩니다.
   gamePage: null,
-  playersPage: 'representative.html',
-  synergyPage: null,
-  logPage: null,
+  settingsPage: null,
 };
 
-const POSITION_DATA = {
+const POSITION_NAMES = {
   catcher: '포수',
   first: '1루수',
   second: '2루수',
@@ -29,9 +27,10 @@ const DEFAULT_GAME_STATE = {
     level: 1,
     attack: 10,
   },
+  tutorialFlags: {
+    representativeBatterSet: false,
+  },
 };
-
-const STORAGE_KEY = 'baseballMonsterHunterSave';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
@@ -43,31 +42,27 @@ function cloneDefaultState() {
   return JSON.parse(JSON.stringify(DEFAULT_GAME_STATE));
 }
 
-function normalizeNumber(value, fallback = 0) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function formatGold(value) {
-  return `${Math.max(0, Math.floor(normalizeNumber(value))).toLocaleString('ko-KR')}G`;
-}
-
-function getModeText(mode) {
-  return mode === 'defense' ? '수비' : '공격';
-}
-
 function loadGameState() {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) return cloneDefaultState();
+    const savedData = localStorage.getItem(STORAGE_KEY);
 
-    const parsed = JSON.parse(saved);
+    if (!savedData) {
+      return cloneDefaultState();
+    }
+
+    const parsedData = JSON.parse(savedData);
+    const defaultState = cloneDefaultState();
+
     return {
-      ...cloneDefaultState(),
-      ...parsed,
+      ...defaultState,
+      ...parsedData,
       representativePlayer: {
-        ...cloneDefaultState().representativePlayer,
-        ...(parsed.representativePlayer ?? {}),
+        ...defaultState.representativePlayer,
+        ...(parsedData.representativePlayer ?? {}),
+      },
+      tutorialFlags: {
+        ...defaultState.tutorialFlags,
+        ...(parsedData.tutorialFlags ?? {}),
       },
     };
   } catch (error) {
@@ -84,9 +79,25 @@ function saveGameState() {
   }
 }
 
+function normalizeNumber(value, fallback = 0) {
+  const parsedValue = Number(value);
+  return Number.isFinite(parsedValue) ? parsedValue : fallback;
+}
+
+function formatGold(value) {
+  return `${Math.max(0, Math.floor(normalizeNumber(value))).toLocaleString('ko-KR')}G`;
+}
+
+function getModeName(mode) {
+  return mode === 'defense' ? '수비' : '공격';
+}
+
 function showToast(message) {
   const toast = $('#toast');
-  if (!toast) return;
+
+  if (!toast) {
+    return;
+  }
 
   window.clearTimeout(toastTimer);
   toast.textContent = message;
@@ -95,6 +106,19 @@ function showToast(message) {
   toastTimer = window.setTimeout(() => {
     toast.classList.remove('is-visible');
   }, 1400);
+}
+
+function showScreen(screenName) {
+  const startScreen = $('#startScreen');
+  const representativeScreen = $('#representativeScreen');
+
+  startScreen?.classList.toggle('is-hidden', screenName !== 'start');
+  representativeScreen?.classList.toggle('is-hidden', screenName !== 'representative');
+
+  if (screenName === 'representative') {
+    renderRepresentativeScreen();
+    representativeScreen?.querySelector('.representative-scroll-area')?.scrollTo({ top: 0 });
+  }
 }
 
 function moveToPage(pageUrl, fallbackMessage) {
@@ -106,40 +130,35 @@ function moveToPage(pageUrl, fallbackMessage) {
   showToast(fallbackMessage);
 }
 
-function initStartPage() {
-  const startButton = $('#startButton');
-  const settingsButton = $('#settingsButton');
-
-  startButton?.addEventListener('click', () => {
-    moveToPage(PAGE_CONFIG.representativePage, '대표 타자 설정 화면으로 이동합니다.');
-  });
-
-  settingsButton?.addEventListener('click', () => {
-    moveToPage(PAGE_CONFIG.settingsPage, '설정 화면은 다음 단계에서 연결할 예정입니다.');
-  });
+function handleGameStart() {
+  // 현재 단계에서는 게임 시작 버튼을 누르면 대표 타자 설정 화면으로 이동합니다.
+  // 추후 경기 화면이 만들어지면 아래 조건으로 첫 접속/재접속 분기가 가능합니다.
+  // if (gameState.tutorialFlags.representativeBatterSet) moveToPage(PAGE_CONFIG.gamePage, '경기 화면으로 이동합니다.');
+  // else showScreen('representative');
+  showScreen('representative');
 }
 
-function renderRepresentativePage() {
-  const goldValue = $('#goldValue');
-  const stageValue = $('#stageValue');
-  const modeValue = $('#modeValue');
-  const selectedPositionName = $('#selectedPositionName');
-  const levelValue = $('#levelValue');
-  const attackValue = $('#attackValue');
-  const playerName = $('#playerName');
-
-  if (goldValue) goldValue.textContent = formatGold(gameState.gold);
-  if (stageValue) stageValue.textContent = `Stage ${gameState.currentStage}`;
-  if (modeValue) modeValue.textContent = getModeText(gameState.currentMode);
-
+function renderRepresentativeScreen() {
   const player = gameState.representativePlayer;
-  const positionName = POSITION_DATA[player.position] ?? '포수';
+  const playerName = player.name.trim();
 
-  if (selectedPositionName) selectedPositionName.textContent = positionName;
-  if (levelValue) levelValue.textContent = `Lv. ${player.level}`;
-  if (attackValue) attackValue.textContent = String(player.attack);
-  if (playerName && document.activeElement !== playerName) {
-    playerName.value = player.name;
+  const statusGold = $('#statusGold');
+  const statusStage = $('#statusStage');
+  const statusMode = $('#statusMode');
+  const profileName = $('#profileName');
+  const playerLevel = $('#playerLevel');
+  const playerAttack = $('#playerAttack');
+  const playerNameInput = $('#playerNameInput');
+
+  if (statusGold) statusGold.textContent = formatGold(gameState.gold);
+  if (statusStage) statusStage.textContent = `Stage ${gameState.currentStage}`;
+  if (statusMode) statusMode.textContent = getModeName(gameState.currentMode);
+  if (profileName) profileName.textContent = playerName || '이름 입력';
+  if (playerLevel) playerLevel.textContent = `Lv. ${player.level}`;
+  if (playerAttack) playerAttack.textContent = String(player.attack);
+
+  if (playerNameInput && document.activeElement !== playerNameInput) {
+    playerNameInput.value = player.name;
   }
 
   $$('.position-button').forEach((button) => {
@@ -150,53 +169,78 @@ function renderRepresentativePage() {
 }
 
 function setRepresentativePosition(position) {
-  if (!POSITION_DATA[position]) return;
-
-  gameState.representativePlayer.position = position;
-  saveGameState();
-  renderRepresentativePage();
-  showToast(`${POSITION_DATA[position]} 포지션을 선택했습니다.`);
-}
-
-function updateRepresentativeName() {
-  const playerName = $('#playerName');
-  if (!playerName) return;
-
-  const trimmedName = playerName.value.trim();
-
-  if (!trimmedName) {
-    showToast('대표 타자 이름을 입력해 주세요.');
-    playerName.focus();
+  if (!POSITION_NAMES[position]) {
     return;
   }
 
-  gameState.representativePlayer.name = trimmedName;
+  gameState.representativePlayer.position = position;
   saveGameState();
-  renderRepresentativePage();
-  showToast(`${trimmedName} 이름으로 저장했습니다.`);
+  renderRepresentativeScreen();
+}
+
+function updateRepresentativeNameFromInput() {
+  const playerNameInput = $('#playerNameInput');
+
+  if (!playerNameInput) {
+    return;
+  }
+
+  gameState.representativePlayer.name = playerNameInput.value.trim();
+  saveGameState();
+  renderRepresentativeScreen();
+}
+
+function saveRepresentativeName() {
+  const playerNameInput = $('#playerNameInput');
+
+  if (!playerNameInput) {
+    return;
+  }
+
+  const newName = playerNameInput.value.trim();
+
+  if (!newName) {
+    showToast('대표 타자 이름을 입력해 주세요.');
+    playerNameInput.focus();
+    return;
+  }
+
+  gameState.representativePlayer.name = newName;
+  saveGameState();
+  renderRepresentativeScreen();
+  showToast(`${newName} 이름으로 저장했습니다.`);
 }
 
 function confirmRepresentativeBatter() {
-  const playerName = $('#playerName');
-  const name = playerName?.value.trim() ?? '';
+  const playerNameInput = $('#playerNameInput');
+  const name = playerNameInput?.value.trim() ?? '';
 
   if (!name) {
     showToast('시작하기 전에 대표 타자 이름을 입력해 주세요.');
-    playerName?.focus();
+    playerNameInput?.focus();
     return;
   }
 
   gameState.representativePlayer.name = name;
-  gameState.currentMode = 'attack';
   gameState.currentStage = 1;
+  gameState.currentMode = 'attack';
+  gameState.tutorialFlags.representativeBatterSet = true;
   saveGameState();
 
-  showToast('대표 타자 설정 완료! 경기 화면은 다음 단계에서 연결됩니다.');
+  moveToPage(PAGE_CONFIG.gamePage, '대표 타자 설정 완료! 경기 화면은 다음 단계에서 연결됩니다.');
 }
 
-function initRepresentativePage() {
+function initStartScreen() {
+  $('#startButton')?.addEventListener('click', handleGameStart);
+
+  $('#settingsButton')?.addEventListener('click', () => {
+    moveToPage(PAGE_CONFIG.settingsPage, '설정 화면은 다음 단계에서 연결할 예정입니다.');
+  });
+}
+
+function initRepresentativeScreen() {
+  gameState.currentStage = 1;
   gameState.currentMode = 'attack';
-  gameState.currentStage = gameState.currentStage || 1;
   saveGameState();
 
   $$('.position-button').forEach((button) => {
@@ -205,17 +249,18 @@ function initRepresentativePage() {
     });
   });
 
-  $('#changeNameButton')?.addEventListener('click', updateRepresentativeName);
+  $('#playerNameInput')?.addEventListener('input', updateRepresentativeNameFromInput);
 
-  $('#playerName')?.addEventListener('keydown', (event) => {
+  $('#playerNameInput')?.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
-      updateRepresentativeName();
+      saveRepresentativeName();
     }
   });
 
-  $('#confirmBatterButton')?.addEventListener('click', confirmRepresentativeBatter);
+  $('#nameChangeButton')?.addEventListener('click', saveRepresentativeName);
+  $('#representativeStartButton')?.addEventListener('click', confirmRepresentativeBatter);
 
-  $$('.nav-button').forEach((button) => {
+  $$('.bottom-nav-button').forEach((button) => {
     button.addEventListener('click', () => {
       const target = button.dataset.target;
 
@@ -224,45 +269,50 @@ function initRepresentativePage() {
         return;
       }
 
-      const pageUrl = PAGE_CONFIG[`${target}Page`];
-      const targetName = button.querySelector('img')?.alt || '해당';
-      moveToPage(pageUrl, `${targetName} 화면은 다음 단계에서 연결할 예정입니다.`);
+      const targetPageMap = {
+        game: PAGE_CONFIG.gamePage,
+        synergy: null,
+        log: null,
+      };
+
+      const fallbackMap = {
+        game: '경기 화면은 다음 단계에서 연결할 예정입니다.',
+        synergy: '시너지 화면은 다음 단계에서 연결할 예정입니다.',
+        log: '로그 화면은 다음 단계에서 연결할 예정입니다.',
+      };
+
+      moveToPage(targetPageMap[target], fallbackMap[target] ?? '해당 화면은 다음 단계에서 연결할 예정입니다.');
     });
   });
 
-  renderRepresentativePage();
+  renderRepresentativeScreen();
 }
 
-function initPage() {
-  const page = document.body.dataset.page;
-
-  if (page === 'start') {
-    initStartPage();
-    return;
-  }
-
-  if (page === 'representative') {
-    initRepresentativePage();
-  }
+function initGame() {
+  initStartScreen();
+  initRepresentativeScreen();
+  showScreen('start');
 }
 
 window.BaseballMonsterHunter = {
-  getState: () => JSON.parse(JSON.stringify(gameState)),
+  getState() {
+    return JSON.parse(JSON.stringify(gameState));
+  },
   setGold(value) {
     gameState.gold = Math.max(0, Math.floor(normalizeNumber(value)));
     saveGameState();
-    renderRepresentativePage();
+    renderRepresentativeScreen();
   },
   addGold(amount) {
-    gameState.gold = Math.max(0, gameState.gold + Math.floor(normalizeNumber(amount)));
+    gameState.gold = Math.max(0, Math.floor(gameState.gold + normalizeNumber(amount)));
     saveGameState();
-    renderRepresentativePage();
+    renderRepresentativeScreen();
   },
   resetSave() {
     gameState = cloneDefaultState();
     saveGameState();
-    renderRepresentativePage();
+    renderRepresentativeScreen();
   },
 };
 
-initPage();
+initGame();

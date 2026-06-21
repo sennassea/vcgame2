@@ -3,37 +3,140 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>야구 몬스터 헌터 | 시작 화면</title>
+  <title>야구 몬스터 헌터</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body data-page="start">
-  <main class="game-shell" aria-label="야구 몬스터 헌터 시작 화면">
-    <section class="start-screen">
-      <img class="start-bg" src="assets/start-bg.png" alt="야구장 배경" draggable="false" />
+<body>
+  <main class="game-shell" aria-label="야구 몬스터 헌터">
+    <section id="startScreen" class="start-screen" aria-label="야구 몬스터 헌터 시작 화면">
+      <img class="background-image" src="assets/bg-start.png" alt="야구장 배경" draggable="false" />
 
-      <div class="start-top-ui">
+      <div class="top-ui">
         <button id="settingsButton" class="image-button settings-button" type="button" aria-label="설정 열기">
-          <img src="assets/settings-btn.png" alt="설정" draggable="false" />
+          <img src="assets/btn-settings.png" alt="설정" draggable="false" />
         </button>
       </div>
 
-      <div class="start-logo-area">
-        <img class="start-logo" src="assets/start-logo.png" alt="야구 몬스터 헌터" draggable="false" />
+      <div class="logo-area">
+        <img class="main-logo" src="assets/logo-main.png" alt="야구 몬스터 헌터" draggable="false" />
       </div>
 
-      <div class="start-character-area" aria-hidden="true">
-        <img class="start-monster-image" src="assets/start-monster.png" alt="" draggable="false" />
-        <img class="start-player-image" src="assets/start-player.png" alt="" draggable="false" />
+      <div class="character-area" aria-hidden="true">
+        <img class="monster-image" src="assets/char-monster.png" alt="" draggable="false" />
+        <img class="player-image" src="assets/char-player.png" alt="" draggable="false" />
       </div>
 
-      <div class="start-bottom-ui">
-        <button id="startButton" class="image-button start-game-button" type="button" aria-label="게임 시작">
-          <img src="assets/start-btn.png" alt="게임 시작" draggable="false" />
+      <div class="bottom-ui">
+        <button id="startButton" class="image-button start-button" type="button" aria-label="게임 시작">
+          <img src="assets/btn-start.png" alt="게임 시작" draggable="false" />
         </button>
       </div>
-
-      <p id="toast" class="toast" role="status" aria-live="polite"></p>
     </section>
+
+    <section id="representativeScreen" class="representative-screen is-hidden" aria-label="대표 타자 설정 화면">
+      <header class="representative-status" aria-label="현재 게임 상태">
+        <div class="status-slot status-slot--gold">
+          <img class="status-icon" src="assets/icon-gold.png" alt="" draggable="false" />
+          <div class="status-text">
+            <span>Gold</span>
+            <strong id="statusGold">0G</strong>
+          </div>
+        </div>
+
+        <div class="status-slot status-slot--stage">
+          <img class="status-icon" src="assets/icon-stage.png" alt="" draggable="false" />
+          <div class="status-text">
+            <span>Stage</span>
+            <strong id="statusStage">Stage 1</strong>
+          </div>
+        </div>
+
+        <div class="status-slot status-slot--mode">
+          <img class="status-icon" src="assets/icon-mode.png" alt="" draggable="false" />
+          <div class="status-text">
+            <span>Mode</span>
+            <strong id="statusMode">공격</strong>
+          </div>
+        </div>
+      </header>
+
+      <div class="representative-scroll-area">
+        <section class="representative-title-card" aria-labelledby="representativeTitle">
+          <img class="representative-title-icon" src="assets/icon-representative.png" alt="" draggable="false" />
+          <div>
+            <p>첫 번째 대표 선수</p>
+            <h1 id="representativeTitle">대표 타자 설정</h1>
+          </div>
+        </section>
+
+        <section class="position-select-area" aria-labelledby="positionTitle">
+          <div class="representative-section-title">
+            <h2 id="positionTitle">포지션 선택</h2>
+          </div>
+
+          <div class="position-grid" role="radiogroup" aria-label="대표 타자 포지션 선택">
+            <button class="position-button is-selected" type="button" role="radio" aria-checked="true" data-position="catcher">포수</button>
+            <button class="position-button" type="button" role="radio" aria-checked="false" data-position="first">1루수</button>
+            <button class="position-button" type="button" role="radio" aria-checked="false" data-position="second">2루수</button>
+            <button class="position-button" type="button" role="radio" aria-checked="false" data-position="third">3루수</button>
+            <button class="position-button" type="button" role="radio" aria-checked="false" data-position="shortstop">유격수</button>
+            <button class="position-button" type="button" role="radio" aria-checked="false" data-position="left">좌익수</button>
+            <button class="position-button" type="button" role="radio" aria-checked="false" data-position="center">중견수</button>
+            <button class="position-button" type="button" role="radio" aria-checked="false" data-position="right">우익수</button>
+          </div>
+        </section>
+
+        <section class="batter-profile-card" aria-label="대표 타자 기본 정보">
+          <img class="batter-profile-bg" src="assets/profile-card-bg.png" alt="" draggable="false" />
+          <img class="batter-profile-image" src="assets/profile-batter.png" alt="대표 타자 프로필" draggable="false" />
+
+          <div class="batter-info-panel">
+            <p class="batter-info-label">대표 타자</p>
+            <h2 id="profileName">이름 입력</h2>
+            <div class="batter-stat">
+              <span>레벨</span>
+              <strong id="playerLevel">Lv. 1</strong>
+            </div>
+            <div class="batter-stat">
+              <span>공격력</span>
+              <strong id="playerAttack">10</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="name-edit-area" aria-label="대표 타자 이름 설정">
+          <div class="name-panel-wrap">
+            <img class="name-panel-image" src="assets/name-panel.png" alt="" draggable="false" />
+            <input id="playerNameInput" class="player-name-input" type="text" maxlength="8" autocomplete="off" aria-label="대표 타자 이름 입력" />
+          </div>
+
+          <button id="nameChangeButton" class="image-button change-name-button" type="button" aria-label="이름 변경">
+            <img src="assets/btn-change.png" alt="변경" draggable="false" />
+          </button>
+        </section>
+
+        <button id="representativeStartButton" class="image-button representative-start-button" type="button" aria-label="대표 타자 설정 완료">
+          <img src="assets/btn-start-play.png" alt="시작하기" draggable="false" />
+        </button>
+      </div>
+
+      <nav class="bottom-navigation" aria-label="하단 메뉴">
+        <button class="bottom-nav-button" type="button" data-target="game" aria-label="경기 화면으로 이동">
+          <img src="assets/nav-game-off.png" alt="경기" draggable="false" />
+        </button>
+        <button class="bottom-nav-button is-current" type="button" data-target="players" aria-current="page" aria-label="선수 화면">
+          <img src="assets/nav-player-on.png" alt="선수" draggable="false" />
+        </button>
+        <button class="bottom-nav-button" type="button" data-target="synergy" aria-label="시너지 화면으로 이동">
+          <img src="assets/nav-synergy-off.png" alt="시너지" draggable="false" />
+        </button>
+        <button class="bottom-nav-button" type="button" data-target="log" aria-label="로그 화면으로 이동">
+          <img src="assets/nav-log-off.png" alt="로그" draggable="false" />
+        </button>
+      </nav>
+    </section>
+
+    <p id="toast" class="toast" role="status" aria-live="polite"></p>
   </main>
 
   <script src="script.js"></script>
