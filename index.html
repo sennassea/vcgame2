@@ -64,10 +64,14 @@
         <section class="representative-title-card" aria-labelledby="representativeTitle">
           <img class="representative-title-icon" src="assets/icon-representative.png" alt="" draggable="false" />
           <div>
-            <p>첫 번째 대표 선수</p>
+            <p>튜토리얼</p>
             <h1 id="representativeTitle">대표 타자 설정</h1>
           </div>
         </section>
+
+        <div class="tutorial-bubble" role="note">
+          야구 몬스터 헌터에 온 걸 환영해요! 몬스터를 잡기 위한 첫 대표 타자를 설정해보세요.
+        </div>
 
         <section class="position-select-area" aria-labelledby="positionTitle">
           <div class="representative-section-title">
@@ -104,27 +108,25 @@
           </div>
         </section>
 
-        <section class="name-edit-area" aria-label="대표 타자 이름 설정">
-          <div class="name-editor-panel">
-            <div class="name-display-line" aria-live="polite">
-              <span id="namePositionPrefix" class="name-position-prefix">포수</span>
-              <strong id="nameDisplayValue" class="name-display-value">이름 입력</strong>
+        <section class="name-setup-area" aria-label="대표 타자 이름 설정">
+          <div class="name-table-panel">
+            <div class="name-table-header" aria-hidden="true">
+              <span>포지션</span>
+              <span>이름</span>
             </div>
 
-            <div class="name-input-row">
-              <span id="inputPositionBadge" class="input-position-badge">포수</span>
-              <input id="playerNameInput" class="player-name-input" type="text" maxlength="8" autocomplete="off" placeholder="이름을 입력하세요" aria-label="대표 타자 이름 입력" />
+            <div class="name-table-value" aria-live="polite">
+              <strong id="summaryPosition">포수</strong>
+              <strong id="summaryName">이름 입력</strong>
             </div>
+
+            <input id="playerNameInput" class="player-name-input" type="text" maxlength="8" autocomplete="off" placeholder="이름을 입력하세요" aria-label="대표 타자 이름 입력" />
           </div>
 
-          <button id="nameChangeButton" class="image-button change-name-button" type="button" aria-label="이름 변경">
-            <img src="assets/btn-change.png" alt="변경" draggable="false" />
+          <button id="nameSetupButton" class="name-setup-button" type="button" aria-label="대표 타자 설정 완료">
+            설정
           </button>
         </section>
-
-        <button id="representativeStartButton" class="image-button representative-start-button" type="button" aria-label="대표 타자 설정 완료">
-          <img src="assets/btn-start-play.png" alt="시작하기" draggable="false" />
-        </button>
       </div>
 
       <nav class="bottom-navigation" aria-label="하단 메뉴">
@@ -139,6 +141,12 @@
         </button>
         <button class="bottom-nav-button" type="button" data-target="log" aria-label="로그 화면으로 이동">
           <img src="assets/nav-log-off.png" alt="로그" draggable="false" />
+        </button>
+        <button class="bottom-nav-button nav-settings-button" type="button" data-target="settings" aria-label="설정 화면으로 이동">
+          <span class="nav-settings-tile" aria-hidden="true">
+            <span class="nav-settings-gear">⚙</span>
+            <span class="nav-settings-text">설정</span>
+          </span>
         </button>
       </nav>
     </section>
