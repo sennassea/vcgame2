@@ -248,6 +248,8 @@
         </button>
       </nav>
 
+      <div id="playerTabInputLock" class="tutorial-input-lock is-hidden" aria-hidden="true"></div>
+
       <div id="stageClearModal" class="stage-clear-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="stageClearTitle">
         <div class="stage-clear-card">
           <p class="stage-clear-kicker">CLEAR</p>
@@ -263,6 +265,15 @@
           <h2 id="stageFailTitle">스테이지 클리어<br>실패!</h2>
           <p>A 몬스터 Lv . 2를 제한 시간 내에 처치하지 못했어요.<br />수비 모드에서 골드를 벌어 선수를 강화해 보세요!</p>
           <button id="stageFailDefenseButton" class="stage-fail-button" type="button">수비모드로!</button>
+        </div>
+      </div>
+
+      <div id="defenseSupportModal" class="defense-support-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="defenseSupportTitle">
+        <div class="defense-support-card">
+          <p class="defense-support-kicker">TUTORIAL SUPPORT</p>
+          <h2 id="defenseSupportTitle">100G를 지원합니다!</h2>
+          <p>지원 골드로 선수를 업그레이드해 보세요.<br />확인을 누른 뒤 하단의 <strong>선수</strong> 탭을 선택하세요.</p>
+          <button id="defenseSupportConfirmButton" class="defense-support-button" type="button">확인</button>
         </div>
       </div>
     </section>

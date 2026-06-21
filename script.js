@@ -37,6 +37,9 @@ const DEFAULT_GAME_STATE = {
     representativePitcherSet: false,
     stage1Cleared: false,
     firstDefenseHitDone: false,
+    firstDefensePitchCount: 0,
+    defenseSupportGranted: false,
+    playerTabGuidanceActive: false,
   },
 };
 
@@ -108,6 +111,7 @@ let attackLoopId = null;
 let attackTimeoutIds = [];
 let defenseLoopId = null;
 let defenseTimeoutIds = [];
+let defenseSupportModalTimerId = null;
 let gameState = loadGameState();
 let attackState = createAttackState();
 let defenseState = { isRunning: false };
@@ -228,7 +232,8 @@ function getRepresentativeStatValue() {
 }
 
 function isTutorialInProgress() {
-  return !gameState.tutorialFlags.firstDefenseHitDone;
+  return !gameState.tutorialFlags.defenseSupportGranted ||
+    gameState.tutorialFlags.playerTabGuidanceActive;
 }
 
 function showToast(message) {
@@ -328,6 +333,50 @@ function stopDefenseMode() {
   clearDefenseTimeouts();
 }
 
+function hideDefenseSupportModal() {
+  $('#defenseSupportModal')?.classList.add('is-hidden');
+}
+
+function setDefenseSupportPending(isActive) {
+  const attackScreen = $('#attackScreen');
+  const inputLock = $('#playerTabInputLock');
+
+  attackScreen?.classList.toggle('is-defense-support-pending', isActive);
+  inputLock?.classList.toggle(
+    'is-hidden',
+    !isActive && !gameState.tutorialFlags.playerTabGuidanceActive
+  );
+}
+
+function setPlayerTabGuidance(isActive) {
+  const attackScreen = $('#attackScreen');
+  const inputLock = $('#playerTabInputLock');
+  const playerButton = $('#attackScreen .bottom-nav-button[data-target="players"]');
+
+  attackScreen?.classList.toggle('is-player-tab-guided', isActive);
+  inputLock?.classList.toggle('is-hidden', !isActive);
+  playerButton?.classList.toggle('is-tutorial-target', isActive);
+
+  $$('#attackScreen .bottom-nav-button').forEach((button) => {
+    if (button.dataset.target !== 'players') {
+      button.setAttribute('aria-disabled', String(isActive));
+    }
+  });
+}
+
+function showDefenseSupportModal() {
+  $('#defenseSupportModal')?.classList.remove('is-hidden');
+}
+
+function beginPlayerTabGuidance() {
+  hideDefenseSupportModal();
+  setDefenseSupportPending(false);
+  gameState.tutorialFlags.playerTabGuidanceActive = true;
+  saveGameState();
+  setPlayerTabGuidance(true);
+  showToast('화살표가 가리키는 선수 탭을 선택하세요.');
+}
+
 function showScreen(screenName) {
   const startScreen = $('#startScreen');
   const representativeScreen = $('#representativeScreen');
@@ -340,6 +389,8 @@ function showScreen(screenName) {
   if (screenName !== 'attack') {
     stopAttackTutorial();
     stopDefenseMode();
+    setDefenseSupportPending(false);
+    setPlayerTabGuidance(false);
     hideAllModals();
   }
 
@@ -741,6 +792,30 @@ function addDefenseGold(amount) {
   renderCommonStatus();
 }
 
+function completeDefensePitchTutorialStep() {
+  if (gameState.tutorialFlags.defenseSupportGranted) return;
+
+  gameState.tutorialFlags.firstDefensePitchCount = Math.min(
+    3,
+    normalizeNumber(gameState.tutorialFlags.firstDefensePitchCount) + 1
+  );
+
+  if (gameState.tutorialFlags.firstDefensePitchCount < 3) {
+    saveGameState();
+    return;
+  }
+
+  gameState.tutorialFlags.defenseSupportGranted = true;
+  gameState.gold += 100;
+  saveGameState();
+  renderCommonStatus();
+  stopDefenseMode();
+  setDefenseSupportPending(true);
+
+  window.clearTimeout(defenseSupportModalTimerId);
+  defenseSupportModalTimerId = window.setTimeout(showDefenseSupportModal, 700);
+}
+
 function resolveDefensePitch() {
   if (!defenseState.isRunning) return;
 
@@ -751,6 +826,7 @@ function resolveDefensePitch() {
   if (!isHit) {
     setMonsterImage('normal');
     showDefenseResult('Miss', '골드 획득 없음', 'miss');
+    completeDefensePitchTutorialStep();
     return;
   }
 
@@ -766,6 +842,7 @@ function resolveDefensePitch() {
       saveGameState();
       showToast('첫 투구 성공! 수비 모드에서 골드를 모아 공격 선수를 강화하세요.');
     }
+    completeDefensePitchTutorialStep();
     return;
   }
 
@@ -775,12 +852,14 @@ function resolveDefensePitch() {
     setMonsterImage('crying');
     addDefenseGold(rewards.catch);
     showDefenseResult('Catch!', `+${rewards.catch}G`, 'catch');
+    completeDefensePitchTutorialStep();
     return;
   }
 
   setMonsterImage('proud');
   addDefenseGold(-1);
   showDefenseResult('Monster Hit', '-1G', 'monster-hit');
+  completeDefensePitchTutorialStep();
 }
 
 function performDefenseCycle() {
@@ -822,6 +901,9 @@ function performDefenseCycle() {
 function startDefenseMode() {
   stopAttackTutorial();
   stopDefenseMode();
+  window.clearTimeout(defenseSupportModalTimerId);
+  setDefenseSupportPending(false);
+  setPlayerTabGuidance(false);
 
   gameState.currentMode = 'defense';
   saveGameState();
@@ -939,6 +1021,7 @@ function failAttackTutorial() {
 function hideAllModals() {
   hideStageClearModal();
   hideStageFailModal();
+  hideDefenseSupportModal();
 }
 
 function showStageClearModal() {
@@ -998,6 +1081,16 @@ function initStartScreen() {
 function handleBottomNavigation(button) {
   const target = button.dataset.target;
   const currentScreenId = button.closest('section')?.id;
+
+  if (gameState.tutorialFlags.playerTabGuidanceActive) {
+    if (target === 'players') {
+      showToast('선수 화면은 다음 단계에서 연결할 예정입니다.');
+      return;
+    }
+
+    showToast('지금은 선수 탭만 선택할 수 있습니다.');
+    return;
+  }
 
   // Keep every tutorial step on its intended path, including setup screens and result modals.
   if (isTutorialInProgress()) {
@@ -1071,6 +1164,7 @@ function initRepresentativeScreen() {
 function initAttackScreen() {
   $('#stageClearConfirmButton')?.addEventListener('click', confirmStageClear);
   $('#stageFailDefenseButton')?.addEventListener('click', switchToDefenseMode);
+  $('#defenseSupportConfirmButton')?.addEventListener('click', beginPlayerTabGuidance);
   $$('.defense-rule-item').forEach((button) => {
     button.addEventListener('click', () => {
       showDefenseRuleTooltip(button);
@@ -1111,6 +1205,9 @@ window.BaseballMonsterHunter = {
   resetSave() {
     stopAttackTutorial();
     stopDefenseMode();
+    window.clearTimeout(defenseSupportModalTimerId);
+    setDefenseSupportPending(false);
+    setPlayerTabGuidance(false);
     gameState = cloneDefaultState();
     attackState = createAttackState();
     saveGameState();
