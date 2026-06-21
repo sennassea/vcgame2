@@ -149,6 +149,96 @@
       </nav>
     </section>
 
+    <section id="attackScreen" class="attack-screen is-hidden" aria-label="공격 모드 튜토리얼 화면">
+      <header class="representative-status attack-status" aria-label="현재 게임 상태">
+        <div class="status-slot status-slot--gold">
+          <img class="status-icon" src="assets/icon-gold.png" alt="" draggable="false" />
+          <div class="status-text">
+            <span>Gold</span>
+            <strong id="attackStatusGold">0G</strong>
+          </div>
+        </div>
+
+        <div class="status-slot status-slot--stage">
+          <img class="status-icon" src="assets/icon-stage.png" alt="" draggable="false" />
+          <div class="status-text">
+            <span>Stage</span>
+            <strong id="attackStatusStage">Stage 1</strong>
+          </div>
+        </div>
+
+        <div class="status-slot status-slot--mode">
+          <img class="status-icon" src="assets/icon-mode.png" alt="" draggable="false" />
+          <div class="status-text">
+            <span>Mode</span>
+            <strong id="attackStatusMode">공격</strong>
+          </div>
+        </div>
+      </header>
+
+      <div class="attack-play-area">
+        <section class="monster-info-card" aria-labelledby="monsterName">
+          <div class="monster-info-top">
+            <div>
+              <p class="monster-kicker">튜토리얼 몬스터</p>
+              <h1 id="monsterName">A몬스터</h1>
+            </div>
+            <div class="timer-box" aria-label="남은 시간">
+              <span>남은 시간</span>
+              <strong><b id="attackTimer">30</b>초</strong>
+            </div>
+          </div>
+
+          <div class="hp-info-row">
+            <span>HP</span>
+            <strong id="monsterHpText">50 / 50</strong>
+          </div>
+          <div class="hp-bar" aria-label="몬스터 체력">
+            <div id="monsterHpFill" class="hp-bar-fill"></div>
+          </div>
+
+          <p class="monster-guide-text">
+            제한 시간 내에 몬스터를 격파하세요! 시간이 0이 되면 몬스터가 도망갑니다.
+          </p>
+        </section>
+
+        <section class="battle-stage" aria-label="전투 화면">
+          <img class="battle-bg" src="assets/profile-card-bg.png" alt="" draggable="false" />
+          <img id="battleBatter" class="battle-batter" src="assets/attack-frame-1.png" alt="대표 타자" draggable="false" />
+          <img id="battleMonster" class="battle-monster" src="assets/monster-normal.png" alt="A몬스터" draggable="false" />
+          <div id="damagePopup" class="damage-popup" aria-live="polite"></div>
+        </section>
+      </div>
+
+      <nav class="bottom-navigation attack-bottom-navigation" aria-label="하단 메뉴">
+        <button class="bottom-nav-button is-current" type="button" data-target="game" aria-current="page" aria-label="경기 화면">
+          <img src="assets/nav-game-on.png" alt="경기" draggable="false" />
+        </button>
+        <button class="bottom-nav-button" type="button" data-target="players" aria-label="선수 화면으로 이동">
+          <img src="assets/nav-player-off.png" alt="선수" draggable="false" />
+        </button>
+        <button class="bottom-nav-button" type="button" data-target="synergy" aria-label="시너지 화면으로 이동">
+          <img src="assets/nav-synergy-off.png" alt="시너지" draggable="false" />
+        </button>
+        <button class="bottom-nav-button" type="button" data-target="log" aria-label="로그 화면으로 이동">
+          <img src="assets/nav-log-off.png" alt="로그" draggable="false" />
+        </button>
+        <button class="bottom-nav-button" type="button" data-target="settings" aria-label="설정 화면으로 이동">
+          <img src="assets/nav-settings-off.png" alt="설정" draggable="false" />
+        </button>
+      </nav>
+
+      <div id="stageClearModal" class="stage-clear-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="stageClearTitle">
+        <div class="stage-clear-card">
+          <p class="stage-clear-kicker">STAGE CLEAR</p>
+          <h2 id="stageClearTitle">1스테이지 클리어!</h2>
+          <p>A몬스터를 처치했습니다.<br />확인을 누르면 다음 스테이지로 이동합니다.</p>
+          <button id="stageClearConfirmButton" class="stage-clear-button" type="button">확인</button>
+        </div>
+      </div>
+    </section>
+
+
     <p id="toast" class="toast" role="status" aria-live="polite"></p>
   </main>
 

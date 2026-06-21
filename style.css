@@ -988,3 +988,406 @@ button {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* =========================
+   공격 모드 튜토리얼 화면
+========================= */
+.attack-screen {
+  position: relative;
+  width: var(--screen-width);
+  height: var(--screen-height);
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 50% 8%, rgba(54, 172, 255, 0.46), transparent 31%),
+    linear-gradient(180deg, #0b4ca2 0%, #062c66 42%, #041525 100%);
+  box-shadow: 0 0 36px rgba(0, 0, 0, 0.6);
+}
+
+.attack-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent 24%),
+    radial-gradient(circle at 12% 82%, rgba(87, 201, 111, 0.18), transparent 33%),
+    radial-gradient(circle at 88% 84%, rgba(87, 201, 111, 0.16), transparent 31%);
+  pointer-events: none;
+}
+
+.attack-status,
+.attack-play-area,
+.attack-bottom-navigation,
+.stage-clear-modal {
+  position: relative;
+  z-index: 2;
+}
+
+.attack-play-area {
+  height: calc(var(--screen-height) - var(--status-height) - var(--safe-top) - var(--nav-height) - var(--safe-bottom));
+  padding: 10px 14px 12px;
+  overflow: hidden;
+}
+
+.monster-info-card {
+  position: relative;
+  padding: 12px 13px 13px;
+  border: 2px solid rgba(250, 201, 113, 0.92);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(5, 51, 90, 0.98), rgba(3, 22, 48, 0.98));
+  box-shadow:
+    inset 0 2px 6px rgba(255, 255, 255, 0.12),
+    0 8px 15px rgba(0, 0, 0, 0.24);
+}
+
+.monster-info-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.monster-kicker {
+  color: #ffdc65;
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  text-shadow: var(--shadow-text);
+}
+
+.monster-info-card h1 {
+  margin-top: 5px;
+  color: #fff;
+  font-size: clamp(24px, 6.7vw, 32px);
+  font-weight: 1000;
+  line-height: 1;
+  letter-spacing: -0.075em;
+  text-shadow: var(--shadow-text);
+}
+
+.timer-box {
+  flex: 0 0 auto;
+  min-width: 108px;
+  padding: 8px 10px;
+  border: 1px solid rgba(250, 201, 113, 0.76);
+  border-radius: 15px;
+  background: rgba(1, 15, 35, 0.72);
+  text-align: center;
+  box-shadow: inset 0 2px 5px rgba(255, 255, 255, 0.08);
+}
+
+.timer-box span {
+  display: block;
+  color: #cfe8ff;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.timer-box strong {
+  display: block;
+  margin-top: 4px;
+  color: #ffdc65;
+  font-size: 21px;
+  font-weight: 1000;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  text-shadow: var(--shadow-text);
+}
+
+.hp-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  color: #fff;
+  font-weight: 950;
+  letter-spacing: -0.04em;
+  text-shadow: var(--shadow-text);
+}
+
+.hp-info-row span {
+  color: #ffdc65;
+  font-size: 15px;
+}
+
+.hp-info-row strong {
+  font-size: 14px;
+}
+
+.hp-bar {
+  position: relative;
+  height: 18px;
+  margin-top: 5px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.46);
+  border-radius: 999px;
+  background: rgba(0, 10, 24, 0.7);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.36);
+}
+
+.hp-bar-fill {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(180deg, #9cff4c 0%, #20b936 100%);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.32);
+  transition: width 260ms ease;
+}
+
+.monster-guide-text {
+  margin-top: 9px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: -0.045em;
+}
+
+.battle-stage {
+  position: relative;
+  height: calc(100% - 168px);
+  min-height: 345px;
+  margin-top: 12px;
+  overflow: hidden;
+  border: 2px solid rgba(250, 201, 113, 0.88);
+  border-radius: 25px;
+  background: #0a4c38;
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.25);
+}
+
+.battle-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  user-select: none;
+  pointer-events: none;
+}
+
+.battle-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(0, 16, 40, 0.02) 0%, rgba(0, 16, 40, 0.1) 42%, rgba(0, 0, 0, 0.22) 100%);
+  pointer-events: none;
+}
+
+.battle-batter,
+.battle-monster {
+  position: absolute;
+  z-index: 3;
+  display: block;
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+  filter: drop-shadow(0 13px 9px rgba(0, 0, 0, 0.36));
+}
+
+.battle-batter {
+  left: -66px;
+  bottom: -12px;
+  width: clamp(255px, 66vw, 345px);
+  transform-origin: 46% 92%;
+  transition: transform 140ms ease;
+}
+
+.battle-monster {
+  right: -55px;
+  bottom: 2px;
+  width: clamp(245px, 63vw, 330px);
+  transform-origin: 50% 92%;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.battle-monster.is-hit {
+  transform: translateX(7px) scale(0.98);
+  filter: drop-shadow(0 13px 9px rgba(0, 0, 0, 0.36)) brightness(1.08);
+}
+
+.damage-popup {
+  position: absolute;
+  z-index: 5;
+  right: 96px;
+  top: 38%;
+  min-width: 96px;
+  padding: 9px 12px;
+  border: 2px solid rgba(255, 230, 126, 0.92);
+  border-radius: 999px;
+  background: rgba(6, 24, 54, 0.92);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 1000;
+  line-height: 1.05;
+  letter-spacing: -0.055em;
+  text-align: center;
+  text-shadow: var(--shadow-text);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  transform: translateY(14px) scale(0.92);
+  pointer-events: none;
+}
+
+.damage-popup.is-visible {
+  animation: damagePop 760ms ease both;
+}
+
+.stage-clear-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 7, 18, 0.64);
+  backdrop-filter: blur(3px);
+}
+
+.stage-clear-card {
+  width: min(100%, 384px);
+  padding: 23px 18px 19px;
+  border: 3px solid rgba(255, 214, 103, 0.96);
+  border-radius: 28px;
+  background: linear-gradient(180deg, #074e91 0%, #041c43 100%);
+  text-align: center;
+  box-shadow:
+    inset 0 2px 7px rgba(255, 255, 255, 0.16),
+    0 18px 32px rgba(0, 0, 0, 0.42);
+}
+
+.stage-clear-kicker {
+  color: #ffdc65;
+  font-size: 15px;
+  font-weight: 1000;
+  letter-spacing: 0.04em;
+  text-shadow: var(--shadow-text);
+}
+
+.stage-clear-card h2 {
+  margin-top: 8px;
+  color: #fff;
+  font-size: clamp(30px, 8vw, 42px);
+  font-weight: 1000;
+  line-height: 1;
+  letter-spacing: -0.07em;
+  text-shadow: var(--shadow-text);
+}
+
+.stage-clear-card p:not(.stage-clear-kicker) {
+  margin-top: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.45;
+  letter-spacing: -0.045em;
+}
+
+.stage-clear-button {
+  width: min(100%, 220px);
+  height: 54px;
+  margin-top: 18px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe45d 0%, #ffaf16 100%);
+  color: #4a2800;
+  font-size: 24px;
+  font-weight: 1000;
+  letter-spacing: -0.06em;
+  box-shadow:
+    inset 0 3px 5px rgba(255, 255, 255, 0.42),
+    0 7px 0 #b96605,
+    0 12px 16px rgba(0, 0, 0, 0.28);
+}
+
+.stage-clear-button:active {
+  transform: translateY(4px);
+  box-shadow:
+    inset 0 3px 5px rgba(255, 255, 255, 0.42),
+    0 3px 0 #b96605,
+    0 7px 12px rgba(0, 0, 0, 0.28);
+}
+
+@keyframes damagePop {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.92);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(0) scale(1.08);
+  }
+  72% {
+    opacity: 1;
+    transform: translateY(-18px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.96);
+  }
+}
+
+@media (max-width: 420px) {
+  .battle-stage {
+    min-height: 330px;
+  }
+
+  .battle-batter {
+    left: -82px;
+    width: 308px;
+  }
+
+  .battle-monster {
+    right: -68px;
+    width: 300px;
+  }
+
+  .damage-popup {
+    right: 82px;
+  }
+}
+
+@media (max-height: 760px) {
+  .attack-play-area {
+    padding-top: 7px;
+  }
+
+  .monster-info-card {
+    padding: 9px 11px 10px;
+    border-radius: 20px;
+  }
+
+  .timer-box {
+    min-width: 100px;
+    padding: 7px 9px;
+  }
+
+  .monster-guide-text {
+    font-size: 11px;
+  }
+
+  .battle-stage {
+    height: calc(100% - 150px);
+    min-height: 286px;
+    margin-top: 9px;
+  }
+
+  .battle-batter {
+    left: -78px;
+    width: 288px;
+  }
+
+  .battle-monster {
+    right: -70px;
+    width: 282px;
+  }
+}
