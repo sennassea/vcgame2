@@ -703,6 +703,12 @@ function handleBottomNavigation(button) {
   const target = button.dataset.target;
   const currentScreenId = button.closest('section')?.id;
 
+  // 튜토리얼(공격모드) 진행 중에는 다른 페이지로 이동 불가
+  if (attackState.isRunning && target !== 'game') {
+    showToast('튜토리얼 진행 중에는 이동할 수 없습니다.');
+    return;
+  }
+
   if (target === 'game') {
     if (currentScreenId === 'attackScreen') {
       showToast('현재 경기 화면입니다.');
