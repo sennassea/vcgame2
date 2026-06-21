@@ -180,23 +180,42 @@
         <section class="monster-info-card" aria-label="몬스터 정보">
           <div class="monster-info-top">
             <div>
-              <p class="monster-kicker">튜토리얼 몬스터</p>
+              <p id="battleInfoKicker" class="monster-kicker">튜토리얼 몬스터</p>
               <h1 id="monsterNameDisplay">A 몬스터 <span class="monster-level">Lv . 1</span></h1>
             </div>
-            <div class="timer-box" aria-label="남은 시간">
+            <div class="timer-box attack-only" aria-label="남은 시간">
               <span>남은 시간</span>
               <strong><span id="attackTimer">30</span>초</strong>
             </div>
           </div>
 
-          <div class="hp-info-row">
+          <div class="hp-info-row attack-only">
             <span>HP</span>
             <strong id="monsterHpText">50 / 50</strong>
           </div>
-          <div class="hp-bar" aria-hidden="true">
+          <div class="hp-bar attack-only" aria-hidden="true">
             <div id="monsterHpFill" class="hp-bar-fill"></div>
           </div>
-          <p class="monster-guide-text">제한 시간 내에 몬스터를 격파하세요! 시간이 0이 되면 몬스터가 도망갑니다.</p>
+          <p id="battleGuideText" class="monster-guide-text">제한 시간 내에 몬스터를 격파하세요! 시간이 0이 되면 몬스터가 도망갑니다.</p>
+          <div id="defenseRuleLegend" class="defense-rule-legend is-hidden" aria-label="수비 모드 판정 안내">
+            <button class="defense-rule-item is-hit" type="button" data-rule="hit" aria-describedby="defenseRuleTooltip">
+              <i class="result-symbol" aria-hidden="true">✓</i>
+              <span><strong>Hit</strong><small id="hitRewardGuide">골드 획득</small></span>
+            </button>
+            <button class="defense-rule-item is-miss" type="button" data-rule="miss" aria-describedby="defenseRuleTooltip">
+              <i class="result-symbol" aria-hidden="true">×</i>
+              <span><strong>Miss</strong><small>보상 없음</small></span>
+            </button>
+            <button class="defense-rule-item is-monster-hit" type="button" data-rule="monster-hit" aria-describedby="defenseRuleTooltip">
+              <i class="result-symbol" aria-hidden="true">!</i>
+              <span><strong>Monster Hit</strong><small>-1G</small></span>
+            </button>
+            <button class="defense-rule-item is-catch" type="button" data-rule="catch" aria-describedby="defenseRuleTooltip">
+              <i class="result-symbol" aria-hidden="true">★</i>
+              <span><strong>Catch</strong><small id="catchRewardGuide">추가 골드</small></span>
+            </button>
+          </div>
+          <p id="defenseRuleTooltip" class="defense-rule-tooltip is-hidden" role="status"></p>
         </section>
 
         <section class="battle-stage" aria-label="전투 화면">

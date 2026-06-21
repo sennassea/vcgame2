@@ -36,6 +36,7 @@ const DEFAULT_GAME_STATE = {
     representativeBatterSet: false,
     representativePitcherSet: false,
     stage1Cleared: false,
+    firstDefenseHitDone: false,
   },
 };
 
@@ -75,21 +76,41 @@ const ATTACK_FRAMES = [
   'assets/attack-frame-3.png',
 ];
 
+const DEFENSE_FRAMES = [
+  'assets/defense-frame-1.png',
+  'assets/defense-frame-2.png',
+  'assets/defense-frame-3.png',
+];
+
+const DEFENSE_CONFIG = {
+  pitchCycleMs: 2000,
+  frame2DelayMs: 620,
+  frame3DelayMs: 1180,
+  resultDelayMs: 1320,
+  resetDelayMs: 1850,
+  monsterHitChance: 0.3,
+};
+
 const MONSTER_IMAGES = {
   normal: 'assets/monster-normal.png',
   proud: 'assets/monster-proud.png',
   hit: 'assets/monster-hit.png',
+  crying: 'assets/monster-crying.png',
 };
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
 let toastTimer = null;
+let defenseRuleTooltipTimer = null;
 let attackTimerId = null;
 let attackLoopId = null;
 let attackTimeoutIds = [];
+let defenseLoopId = null;
+let defenseTimeoutIds = [];
 let gameState = loadGameState();
 let attackState = createAttackState();
+let defenseState = { isRunning: false };
 
 function cloneDefaultState() {
   return JSON.parse(JSON.stringify(DEFAULT_GAME_STATE));
@@ -165,6 +186,25 @@ function getAttackConfigForStage(stage) {
   return STAGE_CONFIGS[normalizedStage] ?? STAGE_CONFIGS[1];
 }
 
+function getDefenseRewards() {
+  const stageMultiplier = 1 + (Math.max(1, gameState.currentStage) - 1) * 0.15;
+  const batterySynergyMultiplier = 1;
+
+  return {
+    hit: Math.round(10 * stageMultiplier * batterySynergyMultiplier),
+    catch: Math.round(20 * stageMultiplier * batterySynergyMultiplier),
+  };
+}
+
+function getPitcherHitChance() {
+  return Math.min(0.5 + (gameState.representativePlayer.level - 1) * 0.005, 0.85);
+}
+
+function getFielderCatchChance() {
+  const infieldSynergyStep = 0;
+  return Math.min(0.1 + infieldSynergyStep * 0.01, 0.6);
+}
+
 function getSelectedPositionName() {
   return POSITION_NAMES[gameState.representativePlayer.position] ?? '';
 }
@@ -187,6 +227,10 @@ function getRepresentativeStatValue() {
   return gameState.currentMode === 'defense' ? player.goldGain : player.attack;
 }
 
+function isTutorialInProgress() {
+  return !gameState.tutorialFlags.firstDefenseHitDone;
+}
+
 function showToast(message) {
   const toast = $('#toast');
 
@@ -201,6 +245,41 @@ function showToast(message) {
   toastTimer = window.setTimeout(() => {
     toast.classList.remove('is-visible');
   }, 1500);
+}
+
+function hideDefenseRuleTooltip() {
+  const tooltip = $('#defenseRuleTooltip');
+  if (!tooltip) return;
+
+  window.clearTimeout(defenseRuleTooltipTimer);
+  tooltip.classList.add('is-hidden');
+  $$('.defense-rule-item').forEach((button) => {
+    button.classList.remove('is-selected');
+  });
+}
+
+function showDefenseRuleTooltip(button) {
+  const tooltip = $('#defenseRuleTooltip');
+  if (!tooltip) return;
+
+  const descriptions = {
+    hit: '투수가 몬스터를 맞혔습니다.',
+    miss: '투수가 던진 공이 몬스터를 빗나갔습니다.',
+    'monster-hit': '투수의 공을 몬스터가 받아쳤습니다.',
+    catch: '몬스터가 친 공을 야수가 잡았습니다.',
+  };
+
+  const description = descriptions[button.dataset.rule];
+  if (!description) return;
+
+  window.clearTimeout(defenseRuleTooltipTimer);
+  $$('.defense-rule-item').forEach((ruleButton) => {
+    ruleButton.classList.toggle('is-selected', ruleButton === button);
+  });
+  tooltip.textContent = description;
+  tooltip.classList.remove('is-hidden');
+
+  defenseRuleTooltipTimer = window.setTimeout(hideDefenseRuleTooltip, 3500);
 }
 
 function moveToPage(pageUrl, fallbackMessage) {
@@ -233,6 +312,22 @@ function stopAttackTutorial() {
   clearAttackTimeouts();
 }
 
+function clearDefenseTimeouts() {
+  defenseTimeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
+  defenseTimeoutIds = [];
+}
+
+function stopDefenseMode() {
+  defenseState.isRunning = false;
+
+  if (defenseLoopId) {
+    window.clearInterval(defenseLoopId);
+    defenseLoopId = null;
+  }
+
+  clearDefenseTimeouts();
+}
+
 function showScreen(screenName) {
   const startScreen = $('#startScreen');
   const representativeScreen = $('#representativeScreen');
@@ -244,6 +339,7 @@ function showScreen(screenName) {
 
   if (screenName !== 'attack') {
     stopAttackTutorial();
+    stopDefenseMode();
     hideAllModals();
   }
 
@@ -424,8 +520,7 @@ function completeRepresentativeSetup() {
     gameState.representativePlayer.pitcherName = name;
     gameState.tutorialFlags.representativePitcherSet = true;
     saveGameState();
-    renderRepresentativeScreen();
-    showToast('대표 투수 설정이 완료되었습니다. 수비 모드를 준비하세요.');
+    startDefenseMode();
     return;
   }
 
@@ -456,7 +551,59 @@ function completeRepresentativeSetup() {
   startAttackTutorial();
 }
 
+function renderDefenseScreen() {
+  const config = getAttackConfigForStage(gameState.currentStage);
+  const rewards = getDefenseRewards();
+  const attackScreen = $('#attackScreen');
+  const battleBatter = $('#battleBatter');
+  const battleMonster = $('#battleMonster');
+  const monsterNameDisplay = $('#monsterNameDisplay');
+  const battleInfoKicker = $('#battleInfoKicker');
+  const battleGuideText = $('#battleGuideText');
+  const defenseRuleLegend = $('#defenseRuleLegend');
+  const hitRewardGuide = $('#hitRewardGuide');
+  const catchRewardGuide = $('#catchRewardGuide');
+  const battlePlayerPosition = $('#battlePlayerPosition');
+  const battlePlayerName = $('#battlePlayerName');
+
+  attackScreen?.classList.add('is-defense');
+  attackScreen?.setAttribute('aria-label', '수비 모드 골드 파밍 화면');
+  $$('.attack-only').forEach((element) => element.classList.add('is-hidden'));
+  defenseRuleLegend?.classList.remove('is-hidden');
+
+  if (battleInfoKicker) battleInfoKicker.textContent = '수비 모드 · 골드 파밍';
+  if (monsterNameDisplay) {
+    monsterNameDisplay.textContent = '투구 결과에 따라 골드를 수집하세요!';
+  }
+  if (battleGuideText) {
+    battleGuideText.textContent =
+      '골드를 모아 공격 선수를 업그레이드하고 다시 도전하세요.';
+  }
+  if (hitRewardGuide) hitRewardGuide.textContent = `+${rewards.hit}G`;
+  if (catchRewardGuide) catchRewardGuide.textContent = `+${rewards.catch}G`;
+  if (battlePlayerPosition) battlePlayerPosition.textContent = '1선발';
+  if (battlePlayerName) {
+    battlePlayerName.textContent = gameState.representativePlayer.pitcherName || '이름 입력';
+  }
+  if (battleBatter) {
+    battleBatter.alt = '대표 투수';
+    battleBatter.src = battleBatter.getAttribute('src') || DEFENSE_FRAMES[0];
+  }
+  if (battleMonster) {
+    const monsterScale = getMonsterStageScale(gameState.currentStage);
+    battleMonster.style.setProperty('--monster-stage-scale', String(monsterScale));
+    battleMonster.style.setProperty('--monster-hit-scale', String(monsterScale * 0.98));
+  }
+
+  renderCommonStatus();
+}
+
 function renderAttackScreen() {
+  if (gameState.currentMode === 'defense') {
+    renderDefenseScreen();
+    return;
+  }
+
   const config = getAttackConfigForStage(gameState.currentStage);
   const monsterHpText = $('#monsterHpText');
   const monsterHpFill = $('#monsterHpFill');
@@ -465,6 +612,21 @@ function renderAttackScreen() {
   const battleBatter = $('#battleBatter');
   const battleMonster = $('#battleMonster');
   const monsterNameDisplay = $('#monsterNameDisplay');
+  const attackScreen = $('#attackScreen');
+  const battleInfoKicker = $('#battleInfoKicker');
+  const battleGuideText = $('#battleGuideText');
+  const defenseRuleLegend = $('#defenseRuleLegend');
+
+  attackScreen?.classList.remove('is-defense');
+  attackScreen?.setAttribute('aria-label', '공격 모드 튜토리얼 화면');
+  $$('.attack-only').forEach((element) => element.classList.remove('is-hidden'));
+  defenseRuleLegend?.classList.add('is-hidden');
+  hideDefenseRuleTooltip();
+  if (battleInfoKicker) battleInfoKicker.textContent = '튜토리얼 몬스터';
+  if (battleGuideText) {
+    battleGuideText.textContent =
+      '제한 시간 내에 몬스터를 격파하세요! 시간이 0이 되면 몬스터가 도망갑니다.';
+  }
 
   if (monsterNameDisplay) {
     monsterNameDisplay.innerHTML = `${config.monsterName} <span class="monster-level">Lv . ${config.monsterLevel}</span>`;
@@ -534,12 +696,142 @@ function showDamagePopup(damage, isCritical) {
   const damagePopup = $('#damagePopup');
   if (!damagePopup) return;
 
-  damagePopup.classList.remove('is-visible');
+  damagePopup.className = 'damage-popup';
   void damagePopup.offsetWidth;
   damagePopup.innerHTML = isCritical
     ? `치명타!<br />-${damage}`
     : `기본 데미지<br />-${damage}`;
   damagePopup.classList.add('is-visible');
+}
+
+function setPitcherFrame(frameIndex) {
+  const battleBatter = $('#battleBatter');
+  if (!battleBatter) return;
+
+  battleBatter.src = DEFENSE_FRAMES[frameIndex] ?? DEFENSE_FRAMES[0];
+}
+
+function showDefenseResult(title, detail = '', resultType = '') {
+  const damagePopup = $('#damagePopup');
+  if (!damagePopup) return;
+
+  const resultSymbols = {
+    hit: '✓',
+    miss: '×',
+    'monster-hit': '!',
+    catch: '★',
+  };
+
+  damagePopup.className = 'damage-popup defense-result-popup';
+  if (resultType) damagePopup.classList.add(`is-${resultType}`);
+  damagePopup.innerHTML =
+    `<i class="result-symbol" aria-hidden="true">${resultSymbols[resultType] ?? ''}</i>` +
+    `<span class="defense-result-copy"><strong>${title}</strong>` +
+    `${detail ? `<span>${detail}</span>` : ''}</span>`;
+  void damagePopup.offsetWidth;
+  damagePopup.classList.add('is-visible');
+}
+
+function addDefenseGold(amount) {
+  gameState.gold = Math.max(0, Math.floor(gameState.gold + amount));
+  saveGameState();
+  renderCommonStatus();
+}
+
+function resolveDefensePitch() {
+  if (!defenseState.isRunning) return;
+
+  const rewards = getDefenseRewards();
+  const isFirstTutorialPitch = !gameState.tutorialFlags.firstDefenseHitDone;
+  const isHit = isFirstTutorialPitch || Math.random() < getPitcherHitChance();
+
+  if (!isHit) {
+    setMonsterImage('normal');
+    showDefenseResult('Miss', '골드 획득 없음', 'miss');
+    return;
+  }
+
+  const isMonsterHit = !isFirstTutorialPitch && Math.random() < DEFENSE_CONFIG.monsterHitChance;
+
+  if (!isMonsterHit) {
+    setMonsterImage('hit');
+    addDefenseGold(rewards.hit);
+    showDefenseResult('Hit!', `+${rewards.hit}G`, 'hit');
+
+    if (isFirstTutorialPitch) {
+      gameState.tutorialFlags.firstDefenseHitDone = true;
+      saveGameState();
+      showToast('첫 투구 성공! 수비 모드에서 골드를 모아 공격 선수를 강화하세요.');
+    }
+    return;
+  }
+
+  const isCatch = Math.random() < getFielderCatchChance();
+
+  if (isCatch) {
+    setMonsterImage('crying');
+    addDefenseGold(rewards.catch);
+    showDefenseResult('Catch!', `+${rewards.catch}G`, 'catch');
+    return;
+  }
+
+  setMonsterImage('proud');
+  addDefenseGold(-1);
+  showDefenseResult('Monster Hit', '-1G', 'monster-hit');
+}
+
+function performDefenseCycle() {
+  if (!defenseState.isRunning) return;
+
+  clearDefenseTimeouts();
+  setPitcherFrame(0);
+  setMonsterImage('normal');
+
+  const frame2TimeoutId = window.setTimeout(() => {
+    if (!defenseState.isRunning) return;
+    setPitcherFrame(1);
+  }, DEFENSE_CONFIG.frame2DelayMs);
+
+  const frame3TimeoutId = window.setTimeout(() => {
+    if (!defenseState.isRunning) return;
+    setPitcherFrame(2);
+  }, DEFENSE_CONFIG.frame3DelayMs);
+
+  const resultTimeoutId = window.setTimeout(() => {
+    if (!defenseState.isRunning) return;
+    resolveDefensePitch();
+  }, DEFENSE_CONFIG.resultDelayMs);
+
+  const resetTimeoutId = window.setTimeout(() => {
+    if (!defenseState.isRunning) return;
+    setPitcherFrame(0);
+    setMonsterImage('normal');
+  }, DEFENSE_CONFIG.resetDelayMs);
+
+  defenseTimeoutIds.push(
+    frame2TimeoutId,
+    frame3TimeoutId,
+    resultTimeoutId,
+    resetTimeoutId
+  );
+}
+
+function startDefenseMode() {
+  stopAttackTutorial();
+  stopDefenseMode();
+
+  gameState.currentMode = 'defense';
+  saveGameState();
+  defenseState = { isRunning: true };
+
+  setPitcherFrame(0);
+  setMonsterImage('normal');
+  hideAllModals();
+  showScreen('attack');
+  renderDefenseScreen();
+
+  performDefenseCycle();
+  defenseLoopId = window.setInterval(performDefenseCycle, DEFENSE_CONFIG.pitchCycleMs);
 }
 
 function applyTutorialDamage() {
@@ -595,6 +887,7 @@ function performAttackCycle() {
 
 function startAttackTutorial() {
   stopAttackTutorial();
+  stopDefenseMode();
 
   const config = getAttackConfigForStage(gameState.currentStage);
   gameState.currentMode = 'attack';
@@ -703,9 +996,9 @@ function handleBottomNavigation(button) {
   const target = button.dataset.target;
   const currentScreenId = button.closest('section')?.id;
 
-  // 튜토리얼(공격모드) 진행 중에는 다른 페이지로 이동 불가
-  if (attackState.isRunning && target !== 'game') {
-    showToast('튜토리얼 진행 중에는 이동할 수 없습니다.');
+  // Keep every tutorial step on its intended path, including setup screens and result modals.
+  if (isTutorialInProgress()) {
+    showToast('튜토리얼 진행 중에는 하단 메뉴를 이용할 수 없습니다.');
     return;
   }
 
@@ -720,7 +1013,11 @@ function handleBottomNavigation(button) {
       return;
     }
 
-    startAttackTutorial();
+    if (gameState.currentMode === 'defense') {
+      startDefenseMode();
+    } else {
+      startAttackTutorial();
+    }
     return;
   }
 
@@ -771,6 +1068,11 @@ function initRepresentativeScreen() {
 function initAttackScreen() {
   $('#stageClearConfirmButton')?.addEventListener('click', confirmStageClear);
   $('#stageFailDefenseButton')?.addEventListener('click', switchToDefenseMode);
+  $$('.defense-rule-item').forEach((button) => {
+    button.addEventListener('click', () => {
+      showDefenseRuleTooltip(button);
+    });
+  });
 }
 
 function initBottomNavigation() {
@@ -805,6 +1107,7 @@ window.BaseballMonsterHunter = {
   },
   resetSave() {
     stopAttackTutorial();
+    stopDefenseMode();
     gameState = cloneDefaultState();
     attackState = createAttackState();
     saveGameState();
