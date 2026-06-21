@@ -5,7 +5,8 @@
 }
 
 :root {
-  --screen-width: min(100vw, 520px);
+  --screen-width: min(100vw, calc(100vh * 9 / 16), 520px);
+  --screen-height: min(100vh, calc(100vw * 16 / 9), 924px);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --nav-height: 106px;
@@ -43,12 +44,75 @@ input {
   display: none !important;
 }
 
+.image-button {
+  display: block;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  transform-origin: center;
+  transition: transform 130ms ease, filter 130ms ease;
+}
+
+.image-button img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.image-button:active {
+  transform: scale(0.95);
+  filter: brightness(0.95);
+}
+
+.image-button:focus-visible,
+.position-button:focus-visible,
+.bottom-nav-button:focus-visible,
+.player-name-input:focus-visible {
+  outline: 4px solid rgba(255, 255, 255, 0.86);
+  outline-offset: 3px;
+  border-radius: 18px;
+}
+
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: calc(188px + var(--safe-bottom));
+  z-index: 50;
+  max-width: calc(100% - 42px);
+  padding: 12px 16px;
+  border-radius: 999px;
+  background: rgba(0, 21, 58, 0.84);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  text-align: center;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  transform: translate(-50%, 14px);
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease;
+  white-space: nowrap;
+}
+
+.toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* =========================
+   시작 화면 - 기존 디자인 유지
+========================= */
 .start-screen {
   position: relative;
   width: var(--screen-width);
-  height: 100vh;
-  max-height: 924px;
-  aspect-ratio: 941 / 1672;
+  height: var(--screen-height);
+  aspect-ratio: 9 / 16;
   overflow: hidden;
   isolation: isolate;
   background: #0b66cc;
@@ -76,37 +140,6 @@ input {
   align-items: center;
   justify-content: flex-end;
   padding: 0 clamp(1px, 0.8vw, 4px) 0 clamp(8px, 2.6vw, 15px);
-}
-
-.image-button {
-  display: block;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  user-select: none;
-  touch-action: manipulation;
-  transform-origin: center;
-  transition: transform 130ms ease, filter 130ms ease;
-}
-
-.image-button img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  pointer-events: none;
-  user-select: none;
-}
-
-.image-button:active {
-  transform: scale(0.95);
-  filter: brightness(0.95);
-}
-
-.image-button:focus-visible {
-  outline: 4px solid rgba(255, 255, 255, 0.86);
-  outline-offset: 3px;
-  border-radius: 24px;
 }
 
 .settings-button {
@@ -188,39 +221,14 @@ input {
   animation: startPulse 1.7s ease-in-out infinite;
 }
 
-.toast {
-  position: absolute;
-  left: 50%;
-  bottom: calc(188px + var(--safe-bottom));
-  z-index: 50;
-  max-width: calc(100% - 42px);
-  padding: 12px 16px;
-  border-radius: 999px;
-  background: rgba(0, 21, 58, 0.84);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  text-align: center;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
-  opacity: 0;
-  transform: translate(-50%, 14px);
-  pointer-events: none;
-  transition: opacity 180ms ease, transform 180ms ease;
-  white-space: nowrap;
-}
-
-.toast.is-visible {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
-
-/* 대표 타자 설정 화면 */
+/* =========================
+   대표 타자 설정 화면
+========================= */
 .representative-screen {
   position: relative;
   width: var(--screen-width);
-  height: 100vh;
-  max-height: 924px;
+  height: var(--screen-height);
+  aspect-ratio: 9 / 16;
   overflow: hidden;
   isolation: isolate;
   background:
@@ -304,12 +312,11 @@ input {
 }
 
 .representative-scroll-area {
-  height: calc(100vh - 62px - var(--safe-top) - var(--nav-height) - var(--safe-bottom));
-  max-height: calc(924px - 62px - var(--nav-height));
+  height: calc(var(--screen-height) - 72px - var(--safe-top) - var(--nav-height) - var(--safe-bottom));
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
-  padding: 10px 13px 18px;
+  padding: 10px 13px 22px;
 }
 
 .representative-scroll-area::-webkit-scrollbar {
@@ -413,21 +420,13 @@ input {
   filter: brightness(0.96);
 }
 
-.position-button:focus-visible,
-.bottom-nav-button:focus-visible,
-.player-name-input:focus-visible {
-  outline: 3px solid rgba(255, 255, 255, 0.88);
-  outline-offset: 3px;
-}
-
 .batter-profile-card {
   position: relative;
   margin-top: 11px;
-  height: clamp(230px, 33vh, 292px);
+  height: clamp(248px, 34vh, 310px);
   overflow: hidden;
   border-radius: 24px;
-  border: 2px solid rgba(250, 201, 113, 0.86);
-  background: #093f32;
+  background: rgba(2, 13, 27, 0.42);
   box-shadow: 0 10px 18px rgba(0, 0, 0, 0.25);
 }
 
@@ -449,17 +448,17 @@ input {
   inset: 0;
   z-index: 1;
   background:
-    linear-gradient(90deg, rgba(0, 10, 25, 0.02) 0%, rgba(0, 12, 28, 0.22) 42%, rgba(0, 12, 28, 0.78) 100%),
-    linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.25) 100%);
+    linear-gradient(90deg, rgba(0, 10, 25, 0.02) 0%, rgba(0, 12, 28, 0.18) 39%, rgba(0, 12, 28, 0.78) 100%),
+    linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.18) 100%);
   pointer-events: none;
 }
 
 .batter-profile-image {
   position: absolute;
   z-index: 2;
-  left: 8px;
-  bottom: 8px;
-  height: calc(100% - 22px);
+  left: -34px;
+  bottom: -112px;
+  height: calc(100% + 142px);
   width: auto;
   object-fit: contain;
   filter: drop-shadow(0 10px 8px rgba(0, 0, 0, 0.42));
@@ -472,7 +471,7 @@ input {
   z-index: 3;
   top: 25px;
   right: 14px;
-  width: min(47%, 216px);
+  width: min(48%, 218px);
 }
 
 .batter-info-label {
@@ -525,36 +524,84 @@ input {
 
 .name-edit-area {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 86px;
+  grid-template-columns: minmax(0, 1fr) 104px;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.name-editor-panel {
+  min-height: 118px;
+  padding: 15px 15px 14px;
+  border: 2px solid rgba(230, 185, 88, 0.82);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(9, 78, 42, 0.96), rgba(2, 44, 28, 0.97)),
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.12), transparent 34%);
+  box-shadow:
+    inset 0 2px 8px rgba(255, 255, 255, 0.09),
+    0 8px 15px rgba(0, 0, 0, 0.22);
+}
+
+.name-display-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.name-position-prefix {
+  flex: 0 0 auto;
+  color: #ffdc65;
+  font-size: 18px;
+  font-weight: 1000;
+  letter-spacing: -0.06em;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.62), 0 4px 8px rgba(0, 0, 0, 0.32);
+}
+
+.name-display-value {
+  min-width: 0;
+  overflow: hidden;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 1000;
+  letter-spacing: -0.065em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.62), 0 4px 8px rgba(0, 0, 0, 0.32);
+}
+
+.name-input-row {
+  display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 11px;
+  margin-top: 12px;
 }
 
-.name-panel-wrap {
-  position: relative;
-  min-height: 112px;
-}
-
-.name-panel-image {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
-  user-select: none;
-  pointer-events: none;
+.input-position-badge {
+  flex: 0 0 auto;
+  min-width: 58px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 221, 102, 0.8);
+  border-radius: 13px;
+  background: rgba(0, 28, 22, 0.72);
+  color: #ffdc65;
+  font-size: 15px;
+  font-weight: 950;
+  letter-spacing: -0.05em;
 }
 
 .player-name-input {
-  position: absolute;
-  left: 18px;
-  right: 20px;
-  top: 46px;
-  height: 39px;
+  min-width: 0;
+  width: 100%;
+  height: 42px;
   padding: 0 12px;
   border: 1px solid rgba(219, 175, 73, 0.85);
-  border-radius: 12px;
+  border-radius: 13px;
   background: rgba(0, 28, 22, 0.72);
   color: #fff;
   font-size: 16px;
@@ -562,15 +609,19 @@ input {
   letter-spacing: -0.04em;
 }
 
+.player-name-input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
 .change-name-button {
-  width: 86px;
-  height: 56px;
+  width: 104px;
+  height: 68px;
   filter: drop-shadow(0 7px 8px rgba(0, 0, 0, 0.32));
 }
 
 .representative-start-button {
-  width: min(100%, 440px);
-  margin: 12px auto 0;
+  width: min(96%, 492px);
+  margin: 14px auto 20px;
   aspect-ratio: 690 / 113;
   filter: drop-shadow(0 8px 11px rgba(98, 49, 0, 0.42));
 }
@@ -579,15 +630,15 @@ input {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
-  height: calc(var(--nav-height) + var(--safe-bottom));
+  bottom: calc(8px + var(--safe-bottom));
+  height: var(--nav-height);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 4px;
-  padding: 5px 8px calc(8px + var(--safe-bottom));
-  background: linear-gradient(180deg, rgba(2, 12, 28, 0.18), rgba(1, 8, 18, 0.92) 26%, rgba(0, 5, 12, 0.98));
-  border-top: 1px solid rgba(250, 201, 113, 0.24);
-  box-shadow: 0 -10px 18px rgba(0, 0, 0, 0.25);
+  padding: 0 8px;
+  background: linear-gradient(180deg, rgba(2, 12, 28, 0.0), rgba(1, 8, 18, 0.72) 38%, rgba(0, 5, 12, 0.92));
+  border-top: 1px solid rgba(250, 201, 113, 0.18);
+  box-shadow: 0 -10px 18px rgba(0, 0, 0, 0.2);
 }
 
 .bottom-nav-button {
@@ -671,7 +722,7 @@ input {
 
 @media (max-width: 420px) {
   :root {
-    --nav-height: 96px;
+    --nav-height: 100px;
   }
 
   .top-ui {
@@ -719,7 +770,7 @@ input {
   }
 
   .representative-scroll-area {
-    height: calc(100vh - 57px - var(--safe-top) - var(--nav-height) - var(--safe-bottom));
+    height: calc(var(--screen-height) - 67px - var(--safe-top) - var(--nav-height) - var(--safe-bottom));
     padding-left: 10px;
     padding-right: 10px;
   }
@@ -733,10 +784,14 @@ input {
     font-size: 14px;
   }
 
+  .batter-profile-card {
+    height: 268px;
+  }
+
   .batter-profile-image {
-    left: -2px;
-    bottom: 7px;
-    height: calc(100% - 20px);
+    left: -44px;
+    bottom: -118px;
+    height: calc(100% + 148px);
   }
 
   .batter-info-panel {
@@ -745,18 +800,23 @@ input {
   }
 
   .name-edit-area {
-    grid-template-columns: minmax(0, 1fr) 74px;
+    grid-template-columns: minmax(0, 1fr) 88px;
   }
 
   .change-name-button {
-    width: 74px;
-    height: 51px;
+    width: 88px;
+    height: 58px;
+  }
+
+  .name-editor-panel {
+    padding-left: 12px;
+    padding-right: 12px;
   }
 }
 
 @media (max-height: 740px) {
   :root {
-    --nav-height: 88px;
+    --nav-height: 92px;
   }
 
   .top-ui {
@@ -800,7 +860,7 @@ input {
   }
 
   .representative-scroll-area {
-    height: calc(100vh - 49px - var(--safe-top) - var(--nav-height) - var(--safe-bottom));
+    height: calc(var(--screen-height) - 58px - var(--safe-top) - var(--nav-height) - var(--safe-bottom));
     padding-top: 7px;
   }
 
@@ -828,8 +888,13 @@ input {
   }
 
   .batter-profile-card {
-    height: 202px;
+    height: 238px;
     margin-top: 9px;
+  }
+
+  .batter-profile-image {
+    bottom: -106px;
+    height: calc(100% + 132px);
   }
 
   .batter-info-panel {
@@ -845,17 +910,23 @@ input {
     margin-top: 9px;
   }
 
-  .name-panel-wrap {
-    min-height: 101px;
+  .name-editor-panel {
+    min-height: 106px;
+    padding-top: 12px;
+    padding-bottom: 12px;
   }
 
-  .player-name-input {
-    top: 40px;
-    height: 35px;
+  .name-input-row {
+    margin-top: 9px;
+  }
+
+  .player-name-input,
+  .input-position-badge {
+    height: 38px;
   }
 
   .representative-start-button {
-    margin-top: 9px;
+    margin-top: 11px;
   }
 }
 

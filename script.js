@@ -149,6 +149,10 @@ function renderRepresentativeScreen() {
   const playerLevel = $('#playerLevel');
   const playerAttack = $('#playerAttack');
   const playerNameInput = $('#playerNameInput');
+  const namePositionPrefix = $('#namePositionPrefix');
+  const inputPositionBadge = $('#inputPositionBadge');
+  const nameDisplayValue = $('#nameDisplayValue');
+  const positionName = POSITION_NAMES[player.position] ?? '포수';
 
   if (statusGold) statusGold.textContent = formatGold(gameState.gold);
   if (statusStage) statusStage.textContent = `Stage ${gameState.currentStage}`;
@@ -156,6 +160,9 @@ function renderRepresentativeScreen() {
   if (profileName) profileName.textContent = playerName || '이름 입력';
   if (playerLevel) playerLevel.textContent = `Lv. ${player.level}`;
   if (playerAttack) playerAttack.textContent = String(player.attack);
+  if (namePositionPrefix) namePositionPrefix.textContent = positionName;
+  if (inputPositionBadge) inputPositionBadge.textContent = positionName;
+  if (nameDisplayValue) nameDisplayValue.textContent = playerName || '이름 입력';
 
   if (playerNameInput && document.activeElement !== playerNameInput) {
     playerNameInput.value = player.name;

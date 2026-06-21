@@ -105,9 +105,16 @@
         </section>
 
         <section class="name-edit-area" aria-label="대표 타자 이름 설정">
-          <div class="name-panel-wrap">
-            <img class="name-panel-image" src="assets/name-panel.png" alt="" draggable="false" />
-            <input id="playerNameInput" class="player-name-input" type="text" maxlength="8" autocomplete="off" aria-label="대표 타자 이름 입력" />
+          <div class="name-editor-panel">
+            <div class="name-display-line" aria-live="polite">
+              <span id="namePositionPrefix" class="name-position-prefix">포수</span>
+              <strong id="nameDisplayValue" class="name-display-value">이름 입력</strong>
+            </div>
+
+            <div class="name-input-row">
+              <span id="inputPositionBadge" class="input-position-badge">포수</span>
+              <input id="playerNameInput" class="player-name-input" type="text" maxlength="8" autocomplete="off" placeholder="이름을 입력하세요" aria-label="대표 타자 이름 입력" />
+            </div>
           </div>
 
           <button id="nameChangeButton" class="image-button change-name-button" type="button" aria-label="이름 변경">
