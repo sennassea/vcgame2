@@ -27,11 +27,14 @@ const DEFAULT_GAME_STATE = {
   representativePlayer: {
     position: '',
     name: '',
+    pitcherName: '',
     level: 1,
     attack: 10,
+    goldGain: 5,
   },
   tutorialFlags: {
     representativeBatterSet: false,
+    representativePitcherSet: false,
     stage1Cleared: false,
   },
 };
@@ -168,7 +171,20 @@ function getSelectedPositionName() {
 
 function getDraftName() {
   const input = $('#playerNameInput');
-  return (input?.value ?? gameState.representativePlayer.name).trim();
+  const storedName =
+    gameState.currentMode === 'defense'
+      ? gameState.representativePlayer.pitcherName
+      : gameState.representativePlayer.name;
+  return (input?.value ?? storedName).trim();
+}
+
+function getRepresentativeStatLabel() {
+  return gameState.currentMode === 'defense' ? '골드 획득량' : '공격력';
+}
+
+function getRepresentativeStatValue() {
+  const player = gameState.representativePlayer;
+  return gameState.currentMode === 'defense' ? player.goldGain : player.attack;
 }
 
 function showToast(message) {
@@ -264,40 +280,113 @@ function renderCommonStatus() {
 function renderRepresentativeScreen() {
   const player = gameState.representativePlayer;
   const positionName = getSelectedPositionName();
-  const positionDisplayName = positionName || '선택 필요';
-  const savedName = player.name.trim();
-  const draftName = getDraftName();
-  const displayName = draftName || savedName || '이름 입력';
+  const positionDisplayName =
+    gameState.currentMode === 'defense'
+      ? '1선발'
+      : positionName || '선택 필요';
+    const savedName = gameState.currentMode === 'defense' ? player.pitcherName.trim() : player.name.trim();
+    const draftName = getDraftName();
+    // For 대표 타자(공격) page, prefer to show the placeholder '이름 입력' rather than previously saved name
+    const displayName = draftName || (gameState.currentMode === 'defense' ? savedName : '') || '이름 입력';
 
   const profileName = $('#profileName');
+  const playerRoleLabel = $('#playerRoleLabel');
   const playerLevel = $('#playerLevel');
-  const playerAttack = $('#playerAttack');
+  const playerStatLabel = $('#playerStatLabel');
+  const playerStatValue = $('#playerStatValue');
   const playerNameInput = $('#playerNameInput');
   const summaryPosition = $('#summaryPosition');
   const summaryName = $('#summaryName');
+  const positionSelectArea = document.querySelector('.position-select-area');
+  const tutorialLine1 = $('#tutorialLine1');
+  const tutorialLine2 = $('#tutorialLine2');
+  const representativeTitle = $('#representativeTitle');
+  const profileImage = document.querySelector('.batter-profile-image');
 
   renderCommonStatus();
 
+  if (representativeTitle) {
+    representativeTitle.textContent =
+      gameState.currentMode === 'defense' ? '대표 투수 설정' : '대표 타자 설정';
+  }
+
+  if (tutorialLine1) {
+    tutorialLine1.textContent =
+      gameState.currentMode === 'defense'
+        ? '수비 모드에 필요한 대표 투수를 선택해보세요.'
+        : '야구 몬스터 헌터에 온 걸 환영해요!';
+  }
+
+  if (tutorialLine2) {
+    tutorialLine2.textContent =
+      gameState.currentMode === 'defense'
+        ? '골드 획득량이 높은 투수를 뽑아 수비를 강화하세요.'
+        : '몬스터를 잡기 위한 첫 대표 타자를 설정해보세요.';
+  }
+
+  if (playerRoleLabel) {
+    playerRoleLabel.textContent =
+      gameState.currentMode === 'defense' ? '대표 투수' : '대표 타자';
+  }
+
+  if (profileImage) {
+    profileImage.src =
+      gameState.currentMode === 'defense'
+        ? 'assets/profile-pitcher.png'
+        : 'assets/profile-batter.png';
+    profileImage.alt =
+      gameState.currentMode === 'defense'
+        ? '대표 투수 프로필'
+        : '대표 타자 프로필';
+  }
+
   if (profileName) profileName.textContent = displayName;
   if (playerLevel) playerLevel.textContent = `Lv. ${player.level}`;
-  if (playerAttack) playerAttack.textContent = String(player.attack);
-  if (summaryPosition) summaryPosition.textContent = positionDisplayName;
-  if (summaryName) summaryName.textContent = displayName;
+  if (playerStatLabel) playerStatLabel.textContent = getRepresentativeStatLabel();
+  if (playerStatValue) playerStatValue.textContent = String(getRepresentativeStatValue());
+    if (summaryPosition) summaryPosition.textContent = positionDisplayName;
+    if (summaryName) summaryName.textContent = displayName;
 
-  if (playerNameInput && document.activeElement !== playerNameInput && !playerNameInput.value && savedName) {
-    playerNameInput.value = savedName;
+  if (playerNameInput) {
+    playerNameInput.placeholder =
+      gameState.currentMode === 'defense'
+        ? '투수 이름을 입력하세요'
+        : '이름을 입력하세요';
+    playerNameInput.setAttribute(
+      'aria-label',
+      gameState.currentMode === 'defense'
+        ? '대표 투수 이름 입력'
+        : '대표 타자 이름 입력'
+    );
+
+    if (gameState.currentMode === 'defense') {
+      // Do not auto-fill previous pitcher name in input; show placeholder instead
+      playerNameInput.value = '';
+    }
   }
+
+  if (positionSelectArea) {
+    positionSelectArea.classList.toggle('is-hidden', gameState.currentMode === 'defense');
+  }
+
+  // Do not auto-fill previously saved batter name when opening the representative (attack) page.
 
   $$('.position-button').forEach((button) => {
     const isSelected = button.dataset.position === player.position;
     button.classList.toggle('is-selected', isSelected);
     button.setAttribute('aria-checked', String(isSelected));
   });
+
+  // Toggle compact pitcher layout when in defense mode
+  const profileCard = document.querySelector('.batter-profile-card');
+  if (profileCard) {
+    profileCard.classList.toggle('is-pitcher', gameState.currentMode === 'defense');
+  }
 }
 
 function updateRepresentativePreview() {
   const positionName = getSelectedPositionName();
-  const positionDisplayName = positionName || '선택 필요';
+  const positionDisplayName = gameState.currentMode === 'defense' ? '1선발' : positionName || '선택 필요';
   const draftName = getDraftName();
   const displayName = draftName || '이름 입력';
 
@@ -324,6 +413,21 @@ function completeRepresentativeSetup() {
   const playerNameInput = $('#playerNameInput');
   const name = playerNameInput?.value.trim() ?? '';
   const hasPosition = Boolean(gameState.representativePlayer.position);
+
+  if (gameState.currentMode === 'defense') {
+    if (!name) {
+      showToast('대표 투수 이름을 입력해 주세요.');
+      playerNameInput?.focus();
+      return;
+    }
+
+    gameState.representativePlayer.pitcherName = name;
+    gameState.tutorialFlags.representativePitcherSet = true;
+    saveGameState();
+    renderRepresentativeScreen();
+    showToast('대표 투수 설정이 완료되었습니다. 수비 모드를 준비하세요.');
+    return;
+  }
 
   if (!hasPosition && !name) {
     showToast('대표 타자의 포지션과 이름을 모두 설정해 주세요.');
@@ -364,6 +468,19 @@ function renderAttackScreen() {
 
   if (monsterNameDisplay) {
     monsterNameDisplay.innerHTML = `${config.monsterName} <span class="monster-level">Lv . ${config.monsterLevel}</span>`;
+  }
+
+  const battlePlayerPosition = $('#battlePlayerPosition');
+  const battlePlayerName = $('#battlePlayerName');
+  const playerPosition = getSelectedPositionName() || '선택 필요';
+  const playerName = gameState.representativePlayer.name || '이름 입력';
+
+  if (battlePlayerPosition) {
+    battlePlayerPosition.textContent = playerPosition;
+  }
+
+  if (battlePlayerName) {
+    battlePlayerName.textContent = playerName;
   }
 
   if (battleMonster) {
@@ -556,7 +673,11 @@ function hideStageFailModal() {
 
 function switchToDefenseMode() {
   hideStageFailModal();
-  showToast('수비 모드는 다음 단계에서 구현할 예정입니다.');
+  gameState.currentMode = 'defense';
+  saveGameState();
+  renderRepresentativeScreen();
+  showScreen('representative');
+  showToast('대표 투수 설정 화면으로 이동합니다.');
 }
 
 function confirmStageClear() {

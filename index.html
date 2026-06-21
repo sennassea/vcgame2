@@ -70,8 +70,8 @@
         </section>
 
         <div class="tutorial-bubble" role="note">
-          <span class="tutorial-line">야구 몬스터 헌터에 온 걸 환영해요!</span>
-          <span class="tutorial-line">몬스터를 잡기 위한 첫 대표 타자를 설정해보세요.</span>
+          <span class="tutorial-line" id="tutorialLine1">야구 몬스터 헌터에 온 걸 환영해요!</span>
+          <span class="tutorial-line" id="tutorialLine2">몬스터를 잡기 위한 첫 대표 타자를 설정해보세요.</span>
         </div>
 
         <section class="position-select-area" aria-labelledby="positionTitle">
@@ -91,20 +91,20 @@
           </div>
         </section>
 
-        <section class="batter-profile-card" aria-label="대표 타자 기본 정보">
+        <section class="batter-profile-card" aria-label="대표 투수 기본 정보">
           <img class="batter-profile-bg" src="assets/profile-card-bg.png" alt="" draggable="false" />
-          <img class="batter-profile-image" src="assets/profile-batter.png" alt="대표 타자 프로필" draggable="false" />
+          <img class="batter-profile-image" src="assets/profile-pitcher.png" alt="대표 투수 프로필" draggable="false" />
 
           <div class="batter-info-panel">
-            <p class="batter-info-label">대표 타자</p>
+            <p class="batter-info-label" id="playerRoleLabel">대표 타자</p>
             <h2 id="profileName">이름 입력</h2>
             <div class="batter-stat">
               <span>레벨</span>
               <strong id="playerLevel">Lv. 1</strong>
             </div>
             <div class="batter-stat">
-              <span>공격력</span>
-              <strong id="playerAttack">10</strong>
+              <span id="playerStatLabel">공격력</span>
+              <strong id="playerStatValue">10</strong>
             </div>
           </div>
         </section>
@@ -112,7 +112,7 @@
         <section class="name-setup-area" aria-label="대표 타자 이름 설정">
           <div class="name-table-panel">
             <div class="name-table-header" aria-hidden="true">
-              <span>포지션</span>
+              <span>타입</span>
               <span>이름</span>
             </div>
 
@@ -201,6 +201,10 @@
 
         <section class="battle-stage" aria-label="전투 화면">
           <img class="battle-bg" src="assets/profile-card-bg.png" alt="" draggable="false" />
+          <div class="battle-player-summary" aria-label="대표 타자 정보">
+            <span id="battlePlayerPosition" class="battle-player-position">포수</span>
+            <strong id="battlePlayerName" class="battle-player-name">이름 입력</strong>
+          </div>
           <img id="battleBatter" class="battle-batter" src="assets/attack-frame-1.png" alt="대표 타자" draggable="false" />
           <img id="battleMonster" class="battle-monster" src="assets/monster-normal.png" alt="A 몬스터" draggable="false" />
           <div id="damagePopup" class="damage-popup" aria-live="polite"></div>
@@ -238,7 +242,7 @@
         <div class="stage-fail-card">
           <p class="stage-fail-kicker">FAILED</p>
           <h2 id="stageFailTitle">스테이지 클리어<br>실패!</h2>
-          <p>B몬스터를 제한 시간 내에 처치하지 못했어요.<br />수비 모드에서 골드를 벌어 선수를 강화해 보세요!</p>
+          <p>A 몬스터 Lv . 2를 제한 시간 내에 처치하지 못했어요.<br />수비 모드에서 골드를 벌어 선수를 강화해 보세요!</p>
           <button id="stageFailDefenseButton" class="stage-fail-button" type="button">수비모드로!</button>
         </div>
       </div>

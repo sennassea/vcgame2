@@ -501,12 +501,28 @@ button {
   z-index: 2;
   left: -124px;
   bottom: -164px;
-  height: calc(100% + 218px);
+  height: calc(100% + 198px);
   width: auto;
   object-fit: contain;
   filter: drop-shadow(0 10px 8px rgba(0, 0, 0, 0.42));
   user-select: none;
   pointer-events: none;
+}
+
+/* When representing pitcher (defense) use smaller profile artwork */
+.batter-profile-card.is-pitcher {
+  height: clamp(200px, 28vh, 260px);
+}
+
+.batter-profile-card.is-pitcher .batter-profile-image {
+  left: -24px;
+  bottom: -72px;
+  height: calc(100% + 96px);
+}
+
+.batter-profile-card.is-pitcher .batter-info-panel {
+  width: min(54%, 200px);
+  top: 18px;
 }
 
 .batter-info-panel {
@@ -630,12 +646,28 @@ button {
   border-radius: 12px;
   background: rgba(0, 24, 19, 0.75);
   color: #fff;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 1000;
   letter-spacing: -0.055em;
   text-overflow: ellipsis;
   white-space: nowrap;
   text-shadow: var(--shadow-text);
+}
+
+/* Combined single-line summary: position emphasized, smaller overall */
+#summaryCombined .position-label {
+  color: #ffdc65;
+  font-weight: 1000;
+  margin-right: 8px;
+  font-size: 16px;
+  letter-spacing: -0.04em;
+}
+
+#summaryCombined .name-label {
+  color: #fff;
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: -0.05em;
 }
 
 .player-name-input {
@@ -1189,6 +1221,42 @@ button {
   border-radius: 25px;
   background: #0a4c38;
   box-shadow: 0 10px 18px rgba(0, 0, 0, 0.25);
+}
+
+.battle-player-summary {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  max-width: 72%;
+  padding: 8px 12px;
+  border-radius: 16px;
+  background: rgba(0, 16, 38, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+}
+
+.battle-player-position {
+  color: #ffdc65;
+  font-size: 15px;
+  font-weight: 1000;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+}
+
+.battle-player-name {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-shadow: var(--shadow-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .battle-bg {
