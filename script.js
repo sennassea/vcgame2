@@ -36,17 +36,35 @@ const DEFAULT_GAME_STATE = {
   },
 };
 
-const ATTACK_TUTORIAL = {
-  monsterName: 'A몬스터',
-  maxHp: 50,
-  timeLimit: 30,
-  attackDamage: 10,
-  criticalChance: 0,
-  attackCycleMs: 2000,
-  frame2DelayMs: 520,
-  frame3DelayMs: 1040,
-  resetDelayMs: 1450,
+const STAGE_CONFIGS = {
+  1: {
+    monsterName: 'A 몬스터',
+    monsterLevel: 1,
+    maxHp: 50,
+    timeLimit: 30,
+    attackDamage: 10,
+    criticalChance: 0,
+    attackCycleMs: 2000,
+    frame2DelayMs: 520,
+    frame3DelayMs: 1040,
+    resetDelayMs: 1450,
+  },
+  2: {
+    monsterName: 'A 몬스터',
+    monsterLevel: 2,
+    maxHp: 160,
+    timeLimit: 30,
+    attackDamage: 10,
+    criticalChance: 0,
+    attackCycleMs: 2000,
+    frame2DelayMs: 520,
+    frame3DelayMs: 1040,
+    resetDelayMs: 1450,
+  },
 };
+
+// 하위호환성을 위한 참조
+const ATTACK_TUTORIAL = STAGE_CONFIGS[1];
 
 const ATTACK_FRAMES = [
   'assets/attack-frame-1.png',
@@ -67,17 +85,18 @@ let toastTimer = null;
 let attackTimerId = null;
 let attackLoopId = null;
 let attackTimeoutIds = [];
-let attackState = createAttackState();
 let gameState = loadGameState();
+let attackState = createAttackState();
 
 function cloneDefaultState() {
   return JSON.parse(JSON.stringify(DEFAULT_GAME_STATE));
 }
 
 function createAttackState() {
+  const config = getAttackConfigForStage(gameState.currentStage);
   return {
-    hp: ATTACK_TUTORIAL.maxHp,
-    timeLeft: ATTACK_TUTORIAL.timeLimit,
+    hp: config.maxHp,
+    timeLeft: config.timeLimit,
     isRunning: false,
     isCleared: false,
   };
@@ -136,6 +155,11 @@ function getModeName(mode) {
 function getMonsterStageScale(stage) {
   const normalizedStage = Math.max(1, Math.floor(normalizeNumber(stage, 1)));
   return Math.min(1 + (normalizedStage - 1) * 0.06, 1.45);
+}
+
+function getAttackConfigForStage(stage) {
+  const normalizedStage = Math.max(1, Math.floor(normalizeNumber(stage, 1)));
+  return STAGE_CONFIGS[normalizedStage] ?? STAGE_CONFIGS[1];
 }
 
 function getSelectedPositionName() {
@@ -204,7 +228,7 @@ function showScreen(screenName) {
 
   if (screenName !== 'attack') {
     stopAttackTutorial();
-    hideStageClearModal();
+    hideAllModals();
   }
 
   if (screenName === 'representative') {
@@ -329,12 +353,18 @@ function completeRepresentativeSetup() {
 }
 
 function renderAttackScreen() {
+  const config = getAttackConfigForStage(gameState.currentStage);
   const monsterHpText = $('#monsterHpText');
   const monsterHpFill = $('#monsterHpFill');
   const attackTimer = $('#attackTimer');
   const timerBox = attackTimer?.closest('.timer-box');
   const battleBatter = $('#battleBatter');
   const battleMonster = $('#battleMonster');
+  const monsterNameDisplay = $('#monsterNameDisplay');
+
+  if (monsterNameDisplay) {
+    monsterNameDisplay.innerHTML = `${config.monsterName} <span class="monster-level">Lv . ${config.monsterLevel}</span>`;
+  }
 
   if (battleMonster) {
     const monsterScale = getMonsterStageScale(gameState.currentStage);
@@ -345,11 +375,11 @@ function renderAttackScreen() {
   renderCommonStatus();
 
   if (monsterHpText) {
-    monsterHpText.textContent = `${Math.max(0, attackState.hp)} / ${ATTACK_TUTORIAL.maxHp}`;
+    monsterHpText.textContent = `${Math.max(0, attackState.hp)} / ${config.maxHp}`;
   }
 
   if (monsterHpFill) {
-    const hpRatio = Math.max(0, Math.min(1, attackState.hp / ATTACK_TUTORIAL.maxHp));
+    const hpRatio = Math.max(0, Math.min(1, attackState.hp / config.maxHp));
     monsterHpFill.style.width = `${hpRatio * 100}%`;
   }
 
@@ -400,8 +430,9 @@ function applyTutorialDamage() {
     return;
   }
 
-  const isCritical = Math.random() < ATTACK_TUTORIAL.criticalChance;
-  const damage = isCritical ? ATTACK_TUTORIAL.attackDamage * 2 : ATTACK_TUTORIAL.attackDamage;
+  const config = getAttackConfigForStage(gameState.currentStage);
+  const isCritical = Math.random() < config.criticalChance;
+  const damage = isCritical ? config.attackDamage * 2 : config.attackDamage;
 
   attackState.hp = Math.max(0, attackState.hp - damage);
   setMonsterImage('hit');
@@ -420,6 +451,7 @@ function performAttackCycle() {
     return;
   }
 
+  const config = getAttackConfigForStage(gameState.currentStage);
   clearAttackTimeouts();
   setBatterFrame(0);
   setMonsterImage('normal');
@@ -427,19 +459,19 @@ function performAttackCycle() {
   const frame2TimeoutId = window.setTimeout(() => {
     if (!attackState.isRunning || attackState.isCleared) return;
     setBatterFrame(1);
-  }, ATTACK_TUTORIAL.frame2DelayMs);
+  }, config.frame2DelayMs);
 
   const frame3TimeoutId = window.setTimeout(() => {
     if (!attackState.isRunning || attackState.isCleared) return;
     setBatterFrame(2);
     applyTutorialDamage();
-  }, ATTACK_TUTORIAL.frame3DelayMs);
+  }, config.frame3DelayMs);
 
   const resetTimeoutId = window.setTimeout(() => {
     if (!attackState.isRunning || attackState.isCleared) return;
     setBatterFrame(0);
     setMonsterImage('normal');
-  }, ATTACK_TUTORIAL.resetDelayMs);
+  }, config.resetDelayMs);
 
   attackTimeoutIds.push(frame2TimeoutId, frame3TimeoutId, resetTimeoutId);
 }
@@ -447,14 +479,14 @@ function performAttackCycle() {
 function startAttackTutorial() {
   stopAttackTutorial();
 
-  gameState.currentStage = 1;
+  const config = getAttackConfigForStage(gameState.currentStage);
   gameState.currentMode = 'attack';
   saveGameState();
 
   attackState = createAttackState();
   setBatterFrame(0);
   setMonsterImage('normal');
-  hideStageClearModal();
+  hideAllModals();
   showScreen('attack');
   renderAttackScreen();
 
@@ -472,16 +504,28 @@ function startAttackTutorial() {
   }, 1000);
 
   performAttackCycle();
-  attackLoopId = window.setInterval(performAttackCycle, ATTACK_TUTORIAL.attackCycleMs);
+  attackLoopId = window.setInterval(performAttackCycle, config.attackCycleMs);
 }
 
 function failAttackTutorial() {
   stopAttackTutorial();
   setMonsterImage('proud');
-  showToast('시간 종료! 튜토리얼이라 다시 도전할 수 있어요.');
 
-  const retryTimeoutId = window.setTimeout(startAttackTutorial, 1600);
-  attackTimeoutIds.push(retryTimeoutId);
+  const stage = gameState.currentStage;
+
+  if (stage === 1) {
+    showToast('시간 종료! 튜토리얼이라 다시 도전할 수 있어요.');
+    const retryTimeoutId = window.setTimeout(startAttackTutorial, 1600);
+    attackTimeoutIds.push(retryTimeoutId);
+  } else {
+    // Stage 2 이상: 팝업 띄우기
+    showStageFailModal();
+  }
+}
+
+function hideAllModals() {
+  hideStageClearModal();
+  hideStageFailModal();
 }
 
 function showStageClearModal() {
@@ -499,13 +543,31 @@ function hideStageClearModal() {
   $('#stageClearModal')?.classList.add('is-hidden');
 }
 
+function showStageFailModal() {
+  const stageFailModal = $('#stageFailModal');
+  if (!stageFailModal) return;
+
+  stageFailModal.classList.remove('is-hidden');
+}
+
+function hideStageFailModal() {
+  $('#stageFailModal')?.classList.add('is-hidden');
+}
+
+function switchToDefenseMode() {
+  hideStageFailModal();
+  showToast('수비 모드는 다음 단계에서 구현할 예정입니다.');
+}
+
 function confirmStageClear() {
   hideStageClearModal();
   gameState.currentStage = 2;
   gameState.currentMode = 'attack';
   saveGameState();
   renderCommonStatus();
-  moveToPage(PAGE_CONFIG.stage2Page, '2스테이지는 다음 작업에서 이어서 구현할 예정입니다.');
+  
+  // Stage 2로 시작
+  startAttackTutorial();
 }
 
 function initStartScreen() {
@@ -581,6 +643,7 @@ function initRepresentativeScreen() {
 
 function initAttackScreen() {
   $('#stageClearConfirmButton')?.addEventListener('click', confirmStageClear);
+  $('#stageFailDefenseButton')?.addEventListener('click', switchToDefenseMode);
 }
 
 function initBottomNavigation() {

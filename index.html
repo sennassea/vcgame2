@@ -181,7 +181,7 @@
           <div class="monster-info-top">
             <div>
               <p class="monster-kicker">튜토리얼 몬스터</p>
-              <h1>A몬스터</h1>
+              <h1 id="monsterNameDisplay">A 몬스터 <span class="monster-level">Lv . 1</span></h1>
             </div>
             <div class="timer-box" aria-label="남은 시간">
               <span>남은 시간</span>
@@ -196,15 +196,13 @@
           <div class="hp-bar" aria-hidden="true">
             <div id="monsterHpFill" class="hp-bar-fill"></div>
           </div>
-          <p class="monster-guide-text">
-            제한 시간 내에 몬스터를 격파하세요! 시간이 0이 되면 몬스터가 도망갑니다.
-          </p>
+          <p class="monster-guide-text">제한 시간 내에 몬스터를 격파하세요! 시간이 0이 되면 몬스터가 도망갑니다.</p>
         </section>
 
         <section class="battle-stage" aria-label="전투 화면">
           <img class="battle-bg" src="assets/profile-card-bg.png" alt="" draggable="false" />
           <img id="battleBatter" class="battle-batter" src="assets/attack-frame-1.png" alt="대표 타자" draggable="false" />
-          <img id="battleMonster" class="battle-monster" src="assets/monster-normal.png" alt="A몬스터" draggable="false" />
+          <img id="battleMonster" class="battle-monster" src="assets/monster-normal.png" alt="A 몬스터" draggable="false" />
           <div id="damagePopup" class="damage-popup" aria-live="polite"></div>
         </section>
       </div>
@@ -233,6 +231,15 @@
           <h2 id="stageClearTitle">1스테이지 클리어!</h2>
           <p>A몬스터를 처치했어요.<br />확인을 누르면 다음 스테이지로 넘어갑니다.</p>
           <button id="stageClearConfirmButton" class="stage-clear-button" type="button">확인</button>
+        </div>
+      </div>
+
+      <div id="stageFailModal" class="stage-fail-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="stageFailTitle">
+        <div class="stage-fail-card">
+          <p class="stage-fail-kicker">FAILED</p>
+          <h2 id="stageFailTitle">스테이지 클리어<br>실패!</h2>
+          <p>B몬스터를 제한 시간 내에 처치하지 못했어요.<br />수비 모드에서 골드를 벌어 선수를 강화해 보세요!</p>
+          <button id="stageFailDefenseButton" class="stage-fail-button" type="button">수비모드로!</button>
         </div>
       </div>
     </section>
