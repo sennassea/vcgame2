@@ -68,7 +68,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding: 0 clamp(8px, 2.6vw, 15px);
+  padding: 0 clamp(1px, 0.8vw, 4px) 0 clamp(8px, 2.6vw, 15px);
 }
 
 .image-button {
@@ -103,7 +103,7 @@ button {
 }
 
 .settings-button {
-  width: clamp(178px, 42vw, 225px);
+  width: clamp(168px, 39vw, 212px);
   aspect-ratio: 2048 / 682;
   filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.3));
 }
@@ -267,11 +267,11 @@ button {
 
 @media (max-width: 420px) {
   .top-ui {
-    padding: 0 4px;
+    padding: 0 0 0 4px;
   }
 
   .settings-button {
-    width: 176px;
+    width: 166px;
   }
 
   .player-image {
@@ -291,7 +291,7 @@ button {
   }
 
   .settings-button {
-    width: 168px;
+    width: 158px;
   }
 
   .logo-area {
