@@ -10,7 +10,7 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --status-height: 66px;
-  --nav-height: 90px;
+  --nav-height: 92px;
   --gold-line: rgba(242, 190, 94, 0.9);
   --deep-blue: #04172d;
   --light-blue: #168eff;
@@ -386,10 +386,15 @@ button {
   color: #fff;
   font-size: 14px;
   font-weight: 850;
-  line-height: 1.35;
+  line-height: 1.45;
   letter-spacing: -0.04em;
   text-shadow: 0 2px 5px rgba(0, 0, 0, 0.36);
   box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.08), 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+
+.tutorial-line {
+  display: block;
 }
 
 .tutorial-bubble::before {
@@ -494,7 +499,7 @@ button {
 .batter-profile-image {
   position: absolute;
   z-index: 2;
-  left: -58px;
+  left: -124px;
   bottom: -164px;
   height: calc(100% + 218px);
   width: auto;
@@ -678,8 +683,8 @@ button {
   height: var(--nav-height);
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 4px;
-  padding: 4px 6px;
+  gap: 2px;
+  padding: 4px 4px;
   background: linear-gradient(180deg, rgba(2, 12, 28, 0), rgba(1, 8, 18, 0.76) 32%, rgba(0, 5, 12, 0.96));
   border-top: 1px solid rgba(250, 201, 113, 0.18);
   box-shadow: 0 -10px 18px rgba(0, 0, 0, 0.2);
@@ -690,6 +695,9 @@ button {
   min-height: 0;
   border: 0;
   background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: transform 130ms ease, filter 130ms ease;
 }
 
@@ -704,38 +712,6 @@ button {
 
 .bottom-nav-button.is-current {
   filter: drop-shadow(0 0 11px rgba(20, 185, 255, 0.72));
-}
-
-.nav-settings-tile {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  border: 2px solid rgba(245, 190, 88, 0.95);
-  border-radius: 18px;
-  background: linear-gradient(180deg, #06345f 0%, #04172d 100%);
-  box-shadow:
-    inset 0 2px 5px rgba(255, 255, 255, 0.1),
-    0 5px 9px rgba(0, 0, 0, 0.24);
-}
-
-.nav-settings-gear {
-  color: #dce7f2;
-  font-size: 25px;
-  line-height: 1;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5), 0 3px 7px rgba(0, 0, 0, 0.36);
-}
-
-.nav-settings-text {
-  color: #fff;
-  font-size: 16px;
-  font-weight: 1000;
-  line-height: 1;
-  letter-spacing: -0.07em;
-  text-shadow: var(--shadow-text);
 }
 
 @keyframes logoDrop {
@@ -842,7 +818,7 @@ button {
   }
 
   .batter-profile-image {
-    left: -72px;
+    left: -132px;
     bottom: -164px;
     height: calc(100% + 218px);
   }
@@ -867,18 +843,11 @@ button {
   }
 
   .bottom-navigation {
-    gap: 3px;
-    padding-left: 5px;
-    padding-right: 5px;
+    gap: 2px;
+    padding-left: 4px;
+    padding-right: 4px;
   }
 
-  .nav-settings-gear {
-    font-size: 22px;
-  }
-
-  .nav-settings-text {
-    font-size: 14px;
-  }
 }
 
 @media (max-height: 740px) {
@@ -964,7 +933,7 @@ button {
   }
 
   .batter-profile-image {
-    left: -54px;
+    left: -112px;
     bottom: -140px;
     height: calc(100% + 194px);
   }

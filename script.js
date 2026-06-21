@@ -25,7 +25,7 @@ const DEFAULT_GAME_STATE = {
   currentStage: 1,
   currentMode: 'attack',
   representativePlayer: {
-    position: 'catcher',
+    position: '',
     name: '',
     level: 1,
     attack: 10,
@@ -96,7 +96,7 @@ function getModeName(mode) {
 }
 
 function getSelectedPositionName() {
-  return POSITION_NAMES[gameState.representativePlayer.position] ?? '포수';
+  return POSITION_NAMES[gameState.representativePlayer.position] ?? '';
 }
 
 function getDraftName() {
@@ -152,6 +152,7 @@ function handleGameStart() {
 function renderRepresentativeScreen() {
   const player = gameState.representativePlayer;
   const positionName = getSelectedPositionName();
+  const positionDisplayName = positionName || '선택 필요';
   const savedName = player.name.trim();
   const draftName = getDraftName();
   const displayName = draftName || savedName || '이름 입력';
@@ -172,7 +173,7 @@ function renderRepresentativeScreen() {
   if (profileName) profileName.textContent = displayName;
   if (playerLevel) playerLevel.textContent = `Lv. ${player.level}`;
   if (playerAttack) playerAttack.textContent = String(player.attack);
-  if (summaryPosition) summaryPosition.textContent = positionName;
+  if (summaryPosition) summaryPosition.textContent = positionDisplayName;
   if (summaryName) summaryName.textContent = displayName;
 
   if (playerNameInput && document.activeElement !== playerNameInput && !playerNameInput.value && savedName) {
@@ -188,6 +189,7 @@ function renderRepresentativeScreen() {
 
 function updateRepresentativePreview() {
   const positionName = getSelectedPositionName();
+  const positionDisplayName = positionName || '선택 필요';
   const draftName = getDraftName();
   const displayName = draftName || '이름 입력';
 
@@ -196,7 +198,7 @@ function updateRepresentativePreview() {
   const summaryName = $('#summaryName');
 
   if (profileName) profileName.textContent = displayName;
-  if (summaryPosition) summaryPosition.textContent = positionName;
+  if (summaryPosition) summaryPosition.textContent = positionDisplayName;
   if (summaryName) summaryName.textContent = displayName;
 }
 
@@ -213,6 +215,18 @@ function setRepresentativePosition(position) {
 function completeRepresentativeSetup() {
   const playerNameInput = $('#playerNameInput');
   const name = playerNameInput?.value.trim() ?? '';
+  const hasPosition = Boolean(gameState.representativePlayer.position);
+
+  if (!hasPosition && !name) {
+    showToast('대표 타자의 포지션과 이름을 모두 설정해 주세요.');
+    playerNameInput?.focus();
+    return;
+  }
+
+  if (!hasPosition) {
+    showToast('대표 타자의 포지션을 선택해 주세요.');
+    return;
+  }
 
   if (!name) {
     showToast('대표 타자 이름을 입력해 주세요.');
