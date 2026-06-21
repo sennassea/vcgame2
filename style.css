@@ -64,16 +64,18 @@ button {
   top: calc(20px + var(--safe-top));
   left: 0;
   right: 0;
-  z-index: 7;
+  z-index: 8;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 clamp(8px, 2.6vw, 15px);
+  gap: 4px;
+  padding: 0 clamp(6px, 2.2vw, 12px);
 }
 
 .gold-box {
   position: relative;
-  width: clamp(190px, 45vw, 236px);
+  flex: 0 0 auto;
+  width: clamp(205px, 48vw, 260px);
   aspect-ratio: 2048 / 682;
   filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.3));
 }
@@ -89,19 +91,33 @@ button {
 .gold-box__text {
   position: absolute;
   top: 50%;
-  left: 38%;
-  width: 42%;
+  left: 42%;
+  right: 22%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  overflow: hidden;
   transform: translateY(-53%);
   color: #ffd84a;
-  font-size: clamp(25px, 6.2vw, 32px);
+  font-size: clamp(22px, 5.5vw, 30px);
   font-weight: 950;
-  letter-spacing: -0.055em;
+  letter-spacing: -0.06em;
   line-height: 1;
-  text-align: left;
+  text-align: right;
   text-shadow:
     0 2px 0 rgba(42, 23, 0, 0.9),
     0 4px 8px rgba(0, 0, 0, 0.48);
   white-space: nowrap;
+}
+
+.gold-box__text.is-long {
+  font-size: clamp(18px, 4.5vw, 24px);
+  letter-spacing: -0.075em;
+}
+
+.gold-box__text.is-very-long {
+  font-size: clamp(15px, 3.7vw, 20px);
+  letter-spacing: -0.085em;
 }
 
 .image-button {
@@ -136,7 +152,8 @@ button {
 }
 
 .settings-button {
-  width: clamp(174px, 40vw, 218px);
+  flex: 0 0 auto;
+  width: clamp(178px, 42vw, 225px);
   aspect-ratio: 2048 / 682;
   filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.3));
 }
@@ -164,7 +181,7 @@ button {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: clamp(140px, 16vh, 158px);
+  bottom: clamp(102px, 12.5vh, 122px);
   z-index: 3;
   height: min(47vh, 390px);
   pointer-events: none;
@@ -181,15 +198,17 @@ button {
 }
 
 .player-image {
+  z-index: 2;
   width: min(216vw, 1120px);
-  left: calc(50% - 574px);
+  left: calc(50% - 612px);
   transform-origin: 54% 92%;
   animation: playerPop 560ms 180ms cubic-bezier(0.2, 0.9, 0.28, 1.15) both;
 }
 
 .monster-image {
+  z-index: 1;
   width: min(232vw, 1210px);
-  left: calc(50% - 502px);
+  left: calc(50% - 462px);
   transform-origin: 48% 92%;
   animation: monsterPop 560ms 280ms cubic-bezier(0.2, 0.9, 0.28, 1.15) both, monsterIdle 2.7s 1s ease-in-out infinite;
 }
@@ -298,29 +317,39 @@ button {
 
 @media (max-width: 420px) {
   .top-ui {
-    padding: 0 6px;
+    padding: 0 4px;
   }
 
   .gold-box {
-    width: 184px;
+    width: 200px;
   }
 
   .settings-button {
-    width: 168px;
+    width: 176px;
   }
 
   .gold-box__text {
-    font-size: 24px;
+    font-size: 23px;
+    left: 42%;
+    right: 22.5%;
+  }
+
+  .gold-box__text.is-long {
+    font-size: 18px;
+  }
+
+  .gold-box__text.is-very-long {
+    font-size: 15px;
   }
 
   .player-image {
     width: 1020px;
-    left: calc(50% - 528px);
+    left: calc(50% - 564px);
   }
 
   .monster-image {
     width: 1100px;
-    left: calc(50% - 462px);
+    left: calc(50% - 418px);
   }
 }
 
@@ -330,15 +359,23 @@ button {
   }
 
   .gold-box {
-    width: 176px;
+    width: 190px;
   }
 
   .settings-button {
-    width: 160px;
+    width: 168px;
   }
 
   .gold-box__text {
-    font-size: 23px;
+    font-size: 22px;
+  }
+
+  .gold-box__text.is-long {
+    font-size: 17px;
+  }
+
+  .gold-box__text.is-very-long {
+    font-size: 14px;
   }
 
   .logo-area {
@@ -347,18 +384,18 @@ button {
   }
 
   .character-area {
-    bottom: 126px;
+    bottom: 96px;
     height: 300px;
   }
 
   .player-image {
     width: 930px;
-    left: calc(50% - 482px);
+    left: calc(50% - 520px);
   }
 
   .monster-image {
     width: 1010px;
-    left: calc(50% - 426px);
+    left: calc(50% - 386px);
   }
 
   .bottom-ui {
