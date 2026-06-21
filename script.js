@@ -133,6 +133,11 @@ function getModeName(mode) {
   return mode === 'defense' ? '수비' : '공격';
 }
 
+function getMonsterStageScale(stage) {
+  const normalizedStage = Math.max(1, Math.floor(normalizeNumber(stage, 1)));
+  return Math.min(1 + (normalizedStage - 1) * 0.06, 1.45);
+}
+
 function getSelectedPositionName() {
   return POSITION_NAMES[gameState.representativePlayer.position] ?? '';
 }
@@ -327,8 +332,15 @@ function renderAttackScreen() {
   const monsterHpText = $('#monsterHpText');
   const monsterHpFill = $('#monsterHpFill');
   const attackTimer = $('#attackTimer');
+  const timerBox = attackTimer?.closest('.timer-box');
   const battleBatter = $('#battleBatter');
   const battleMonster = $('#battleMonster');
+
+  if (battleMonster) {
+    const monsterScale = getMonsterStageScale(gameState.currentStage);
+    battleMonster.style.setProperty('--monster-stage-scale', String(monsterScale));
+    battleMonster.style.setProperty('--monster-hit-scale', String(monsterScale * 0.98));
+  }
 
   renderCommonStatus();
 
@@ -342,7 +354,9 @@ function renderAttackScreen() {
   }
 
   if (attackTimer) {
-    attackTimer.textContent = String(Math.max(0, attackState.timeLeft));
+    const safeTimeLeft = Math.max(0, attackState.timeLeft);
+    attackTimer.textContent = String(safeTimeLeft);
+    timerBox?.classList.toggle('is-danger', safeTimeLeft <= 10);
   }
 
   if (battleBatter && !battleBatter.getAttribute('src')) {

@@ -177,15 +177,15 @@
       </header>
 
       <div class="attack-play-area">
-        <section class="monster-info-card" aria-labelledby="monsterName">
+        <section class="monster-info-card" aria-label="몬스터 정보">
           <div class="monster-info-top">
             <div>
               <p class="monster-kicker">튜토리얼 몬스터</p>
-              <h1 id="monsterName">A몬스터</h1>
+              <h1>A몬스터</h1>
             </div>
             <div class="timer-box" aria-label="남은 시간">
               <span>남은 시간</span>
-              <strong><b id="attackTimer">30</b>초</strong>
+              <strong><span id="attackTimer">30</span>초</strong>
             </div>
           </div>
 
@@ -193,10 +193,9 @@
             <span>HP</span>
             <strong id="monsterHpText">50 / 50</strong>
           </div>
-          <div class="hp-bar" aria-label="몬스터 체력">
+          <div class="hp-bar" aria-hidden="true">
             <div id="monsterHpFill" class="hp-bar-fill"></div>
           </div>
-
           <p class="monster-guide-text">
             제한 시간 내에 몬스터를 격파하세요! 시간이 0이 되면 몬스터가 도망갑니다.
           </p>
@@ -230,9 +229,9 @@
 
       <div id="stageClearModal" class="stage-clear-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="stageClearTitle">
         <div class="stage-clear-card">
-          <p class="stage-clear-kicker">STAGE CLEAR</p>
+          <p class="stage-clear-kicker">CLEAR</p>
           <h2 id="stageClearTitle">1스테이지 클리어!</h2>
-          <p>A몬스터를 처치했습니다.<br />확인을 누르면 다음 스테이지로 이동합니다.</p>
+          <p>A몬스터를 처치했어요.<br />확인을 누르면 다음 스테이지로 넘어갑니다.</p>
           <button id="stageClearConfirmButton" class="stage-clear-button" type="button">확인</button>
         </div>
       </div>

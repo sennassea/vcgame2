@@ -1079,13 +1079,35 @@ button {
   box-shadow: inset 0 2px 5px rgba(255, 255, 255, 0.08);
 }
 
-.timer-box span {
+.timer-box > span {
   display: block;
   color: #cfe8ff;
   font-size: 11px;
   font-weight: 850;
   line-height: 1;
   letter-spacing: -0.04em;
+}
+
+.timer-box strong span {
+  display: inline;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+}
+
+.timer-box.is-danger strong {
+  color: #ff4040;
+  animation: timeWarningPulse 0.7s ease-in-out infinite;
+}
+
+@keyframes timeWarningPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.07);
+  }
 }
 
 .timer-box strong {
@@ -1194,31 +1216,32 @@ button {
 }
 
 .battle-batter {
-  left: -66px;
-  bottom: -12px;
-  width: clamp(255px, 66vw, 345px);
+  left: 18px;
+  bottom: 8px;
+  width: clamp(128px, 33vw, 173px);
   transform-origin: 46% 92%;
   transition: transform 140ms ease;
 }
 
 .battle-monster {
-  right: -55px;
-  bottom: 2px;
-  width: clamp(245px, 63vw, 330px);
+  right: 24px;
+  bottom: 12px;
+  width: clamp(123px, 31.5vw, 165px);
+  transform: scale(var(--monster-stage-scale, 1));
   transform-origin: 50% 92%;
   transition: transform 120ms ease, filter 120ms ease;
 }
 
 .battle-monster.is-hit {
-  transform: translateX(7px) scale(0.98);
+  transform: translateX(4px) scale(var(--monster-hit-scale, 0.98));
   filter: drop-shadow(0 13px 9px rgba(0, 0, 0, 0.36)) brightness(1.08);
 }
 
 .damage-popup {
   position: absolute;
   z-index: 5;
-  right: 96px;
-  top: 38%;
+  right: 64px;
+  top: 46%;
   min-width: 96px;
   padding: 9px 12px;
   border: 2px solid rgba(255, 230, 126, 0.92);
@@ -1342,17 +1365,17 @@ button {
   }
 
   .battle-batter {
-    left: -82px;
-    width: 308px;
+    left: 12px;
+    width: 154px;
   }
 
   .battle-monster {
-    right: -68px;
-    width: 300px;
+    right: 18px;
+    width: 150px;
   }
 
   .damage-popup {
-    right: 82px;
+    right: 54px;
   }
 }
 
@@ -1382,12 +1405,12 @@ button {
   }
 
   .battle-batter {
-    left: -78px;
-    width: 288px;
+    left: 14px;
+    width: 144px;
   }
 
   .battle-monster {
-    right: -70px;
-    width: 282px;
+    right: 18px;
+    width: 141px;
   }
 }
