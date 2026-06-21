@@ -20,6 +20,26 @@ const POSITION_NAMES = {
   right: '우익수',
 };
 
+const PLAYER_POSITION_ORDER = [
+  'catcher',
+  'first',
+  'second',
+  'third',
+  'shortstop',
+  'left',
+  'center',
+  'right',
+];
+
+const PLAYER_PROFILE_IMAGES = {
+  representative: 'assets/player-representative.png',
+  locked: 'assets/player-locked.png',
+  pitcher: 'assets/player-pitcher.png',
+  catcher: 'assets/player-catcher.png',
+  infielder: 'assets/player-infielder.png',
+  outfielder: 'assets/player-outfielder.png',
+};
+
 const DEFAULT_GAME_STATE = {
   gold: 0,
   currentStage: 1,
@@ -29,8 +49,19 @@ const DEFAULT_GAME_STATE = {
     name: '',
     pitcherName: '',
     level: 1,
+    pitcherLevel: 1,
     attack: 10,
     goldGain: 5,
+  },
+  fieldPlayers: {
+    catcher: { unlocked: false, name: '', level: 1, attack: 10 },
+    first: { unlocked: false, name: '', level: 1, attack: 10 },
+    second: { unlocked: false, name: '', level: 1, attack: 10 },
+    third: { unlocked: false, name: '', level: 1, attack: 10 },
+    shortstop: { unlocked: false, name: '', level: 1, attack: 10 },
+    left: { unlocked: false, name: '', level: 1, attack: 10 },
+    center: { unlocked: false, name: '', level: 1, attack: 10 },
+    right: { unlocked: false, name: '', level: 1, attack: 10 },
   },
   tutorialFlags: {
     representativeBatterSet: false,
@@ -112,6 +143,7 @@ let attackTimeoutIds = [];
 let defenseLoopId = null;
 let defenseTimeoutIds = [];
 let defenseSupportModalTimerId = null;
+let selectedRecruitPosition = '';
 let gameState = loadGameState();
 let attackState = createAttackState();
 let defenseState = { isRunning: false };
@@ -140,6 +172,7 @@ function loadGameState() {
 
     const parsedData = JSON.parse(savedData);
     const defaultState = cloneDefaultState();
+    const savedFieldPlayers = parsedData.fieldPlayers ?? {};
 
     return {
       ...defaultState,
@@ -148,6 +181,15 @@ function loadGameState() {
         ...defaultState.representativePlayer,
         ...(parsedData.representativePlayer ?? {}),
       },
+      fieldPlayers: Object.fromEntries(
+        PLAYER_POSITION_ORDER.map((position) => [
+          position,
+          {
+            ...defaultState.fieldPlayers[position],
+            ...(savedFieldPlayers[position] ?? {}),
+          },
+        ])
+      ),
       tutorialFlags: {
         ...defaultState.tutorialFlags,
         ...(parsedData.tutorialFlags ?? {}),
@@ -201,12 +243,24 @@ function getDefenseRewards() {
 }
 
 function getPitcherHitChance() {
-  return Math.min(0.5 + (gameState.representativePlayer.level - 1) * 0.005, 0.85);
+  return Math.min(
+    0.5 + (gameState.representativePlayer.pitcherLevel - 1) * 0.005,
+    0.85
+  );
 }
 
 function getFielderCatchChance() {
   const infieldSynergyStep = 0;
   return Math.min(0.1 + infieldSynergyStep * 0.01, 0.6);
+}
+
+function getLevelUpCost(level) {
+  return Math.floor(50 * (1.18 ** (Math.max(1, level) - 1)));
+}
+
+function formatPercent(value) {
+  const percent = value * 100;
+  return `${Number.isInteger(percent) ? percent : percent.toFixed(1)}%`;
 }
 
 function getSelectedPositionName() {
@@ -223,12 +277,14 @@ function getDraftName() {
 }
 
 function getRepresentativeStatLabel() {
-  return gameState.currentMode === 'defense' ? '골드 획득량' : '공격력';
+  return gameState.currentMode === 'defense' ? 'Hit 확률' : '공격력';
 }
 
 function getRepresentativeStatValue() {
   const player = gameState.representativePlayer;
-  return gameState.currentMode === 'defense' ? player.goldGain : player.attack;
+  return gameState.currentMode === 'defense'
+    ? formatPercent(getPitcherHitChance())
+    : player.attack;
 }
 
 function isTutorialInProgress() {
@@ -380,10 +436,12 @@ function beginPlayerTabGuidance() {
 function showScreen(screenName) {
   const startScreen = $('#startScreen');
   const representativeScreen = $('#representativeScreen');
+  const playersScreen = $('#playersScreen');
   const attackScreen = $('#attackScreen');
 
   startScreen?.classList.toggle('is-hidden', screenName !== 'start');
   representativeScreen?.classList.toggle('is-hidden', screenName !== 'representative');
+  playersScreen?.classList.toggle('is-hidden', screenName !== 'players');
   attackScreen?.classList.toggle('is-hidden', screenName !== 'attack');
 
   if (screenName !== 'attack') {
@@ -394,6 +452,10 @@ function showScreen(screenName) {
     hideAllModals();
   }
 
+  if (screenName !== 'players') {
+    hideRecruitModals();
+  }
+
   if (screenName === 'representative') {
     renderRepresentativeScreen();
     representativeScreen?.querySelector('.representative-scroll-area')?.scrollTo({ top: 0 });
@@ -401,6 +463,11 @@ function showScreen(screenName) {
 
   if (screenName === 'attack') {
     renderAttackScreen();
+  }
+
+  if (screenName === 'players') {
+    renderPlayersScreen();
+    playersScreen?.querySelector('.players-scroll-area')?.scrollTo({ top: 0 });
   }
 }
 
@@ -416,6 +483,9 @@ function renderCommonStatus() {
     ['attackStatusGold', formatGold(gameState.gold)],
     ['attackStatusStage', `Stage ${gameState.currentStage}`],
     ['attackStatusMode', getModeName(gameState.currentMode)],
+    ['playersStatusGold', formatGold(gameState.gold)],
+    ['playersStatusStage', `Stage ${gameState.currentStage}`],
+    ['playersStatusMode', getModeName(gameState.currentMode)],
   ];
 
   statusItems.forEach(([id, value]) => {
@@ -488,7 +558,11 @@ function renderRepresentativeScreen() {
   }
 
   if (profileName) profileName.textContent = displayName;
-  if (playerLevel) playerLevel.textContent = `Lv. ${player.level}`;
+  if (playerLevel) {
+    const displayedLevel =
+      gameState.currentMode === 'defense' ? player.pitcherLevel : player.level;
+    playerLevel.textContent = `Lv. ${displayedLevel}`;
+  }
   if (playerStatLabel) playerStatLabel.textContent = getRepresentativeStatLabel();
   if (playerStatValue) playerStatValue.textContent = String(getRepresentativeStatValue());
     if (summaryPosition) summaryPosition.textContent = positionDisplayName;
@@ -600,6 +674,285 @@ function completeRepresentativeSetup() {
   renderRepresentativeScreen();
 
   startAttackTutorial();
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function createUnlockedPlayerCard({
+  role,
+  upgradeTarget = role,
+  badge,
+  image,
+  name,
+  position,
+  level,
+  statLabel,
+  statValue,
+}) {
+  const levelUpCost = getLevelUpCost(level);
+
+  return `
+    <article class="player-management-card is-unlocked is-${role}">
+      <div class="player-card-portrait">
+        <img src="${image}" alt="${escapeHtml(position)} 프로필" draggable="false" />
+        <span>${badge}</span>
+      </div>
+      <div class="player-card-content">
+        <div class="player-card-heading">
+          <div>
+            <p>${escapeHtml(position)}</p>
+            <h2>${escapeHtml(name)}</h2>
+          </div>
+          <strong>Lv. ${level}</strong>
+        </div>
+        <div class="player-card-stat">
+          <span>${statLabel}</span>
+          <strong>${statValue}</strong>
+        </div>
+        <button class="player-upgrade-button" type="button" data-upgrade-player="${upgradeTarget}">
+          레벨업 <span>${formatGold(levelUpCost)}</span>
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+function createLockedPlayerCard(position) {
+  return `
+    <article class="player-management-card is-locked">
+      <div class="player-card-portrait">
+        <img src="${PLAYER_PROFILE_IMAGES.locked}" alt="미해금 선수" draggable="false" />
+      </div>
+      <div class="player-card-content">
+        <div class="player-card-heading">
+          <div>
+            <p>${escapeHtml(POSITION_NAMES[position])}</p>
+            <h2>미해금</h2>
+          </div>
+          <strong class="locked-label">LOCKED</strong>
+        </div>
+        <p class="locked-player-guide">선수를 영입하면 이름 설정과 육성이 가능합니다.</p>
+        <button class="player-recruit-button" type="button" data-recruit-position="${position}">
+          영입 <span>100G</span>
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+function renderPlayersScreen() {
+  const list = $('#playerManagementList');
+  if (!list) return;
+
+  const player = gameState.representativePlayer;
+  const representativePosition = getSelectedPositionName() || '대표 타자';
+  const availablePositions = PLAYER_POSITION_ORDER.filter(
+    (position) => position !== player.position
+  );
+  const unlockedPositions = availablePositions.filter(
+    (position) => gameState.fieldPlayers[position].unlocked
+  );
+  const lockedPositions = availablePositions.filter(
+    (position) => !gameState.fieldPlayers[position].unlocked
+  );
+
+  const representativeCard = createUnlockedPlayerCard({
+    role: 'batter',
+    badge: '대표 타자',
+    image: PLAYER_PROFILE_IMAGES.representative,
+    name: player.name || '이름 입력',
+    position: representativePosition,
+    level: player.level,
+    statLabel: '공격력',
+    statValue: player.attack,
+  });
+
+  const pitcherCard = createUnlockedPlayerCard({
+    role: 'pitcher',
+    badge: '1선발',
+    image: PLAYER_PROFILE_IMAGES.pitcher,
+    name: player.pitcherName || '이름 입력',
+    position: '투수',
+    level: player.pitcherLevel,
+    statLabel: 'Hit 확률',
+    statValue: formatPercent(getPitcherHitChance()),
+  });
+
+  const recruitedCards = unlockedPositions.map((position) => {
+    const recruitedPlayer = gameState.fieldPlayers[position];
+
+    return createUnlockedPlayerCard({
+      role: 'fielder',
+      upgradeTarget: position,
+      badge: '영입 선수',
+      image: getPositionProfileImage(position),
+      name: recruitedPlayer.name,
+      position: POSITION_NAMES[position],
+      level: recruitedPlayer.level,
+      statLabel: '공격력',
+      statValue: recruitedPlayer.attack,
+    });
+  }).join('');
+
+  list.innerHTML =
+    representativeCard +
+    pitcherCard +
+    recruitedCards +
+    `<div class="locked-roster-title"><span>미해금 선수</span><strong>${lockedPositions.length}명</strong></div>` +
+    lockedPositions.map(createLockedPlayerCard).join('');
+
+  renderCommonStatus();
+}
+
+function getPositionProfileImage(position) {
+  if (position === 'catcher') return PLAYER_PROFILE_IMAGES.catcher;
+  if (['first', 'second', 'third', 'shortstop'].includes(position)) {
+    return PLAYER_PROFILE_IMAGES.infielder;
+  }
+  return PLAYER_PROFILE_IMAGES.outfielder;
+}
+
+function upgradePlayer(target) {
+  const player = gameState.representativePlayer;
+  const recruitedPlayer = gameState.fieldPlayers[target];
+  const currentLevel =
+    target === 'pitcher'
+      ? player.pitcherLevel
+      : target === 'batter'
+        ? player.level
+        : recruitedPlayer?.level;
+
+  if (!currentLevel) return;
+
+  const cost = getLevelUpCost(currentLevel);
+
+  if (gameState.gold < cost) {
+    showToast(`골드가 부족합니다. 레벨업에는 ${formatGold(cost)}가 필요합니다.`);
+    return;
+  }
+
+  gameState.gold -= cost;
+
+  if (target === 'pitcher') {
+    player.pitcherLevel += 1;
+  } else if (target === 'batter') {
+    player.level += 1;
+    player.attack = player.level * 10;
+  } else if (recruitedPlayer?.unlocked) {
+    recruitedPlayer.level += 1;
+    recruitedPlayer.attack = recruitedPlayer.level * 10;
+  }
+
+  saveGameState();
+  renderPlayersScreen();
+  showToast('레벨업이 완료되었습니다!');
+}
+
+function hideRecruitModals() {
+  $('#recruitConfirmModal')?.classList.add('is-hidden');
+  $('#recruitSetupModal')?.classList.add('is-hidden');
+}
+
+function openRecruitConfirmation(position) {
+  if (!POSITION_NAMES[position] || gameState.fieldPlayers[position]?.unlocked) {
+    return;
+  }
+
+  selectedRecruitPosition = position;
+  const positionName = POSITION_NAMES[position];
+  const title = $('#recruitConfirmTitle');
+  const positionLabel = $('#recruitConfirmPosition');
+
+  if (title) title.textContent = `${positionName} 영입`;
+  if (positionLabel) positionLabel.textContent = positionName;
+  $('#recruitConfirmModal')?.classList.remove('is-hidden');
+}
+
+function cancelRecruitment() {
+  selectedRecruitPosition = '';
+  hideRecruitModals();
+}
+
+function openRecruitSetup() {
+  const position = selectedRecruitPosition;
+  if (!POSITION_NAMES[position]) return;
+
+  if (gameState.gold < 100) {
+    showToast('선수 영입에는 100G가 필요합니다.');
+    return;
+  }
+
+  $('#recruitConfirmModal')?.classList.add('is-hidden');
+
+  const positionName = POSITION_NAMES[position];
+  const profileImage = $('#recruitProfileImage');
+  const nameInput = $('#recruitPlayerNameInput');
+
+  if ($('#recruitSetupTitle')) {
+    $('#recruitSetupTitle').textContent = `${positionName} 이름 설정`;
+  }
+  if ($('#recruitFixedPosition')) $('#recruitFixedPosition').textContent = positionName;
+  if ($('#recruitProfilePosition')) $('#recruitProfilePosition').textContent = positionName;
+  if ($('#recruitProfileName')) $('#recruitProfileName').textContent = '이름 입력';
+  if (profileImage) {
+    profileImage.src = getPositionProfileImage(position);
+    profileImage.alt = `${positionName} 프로필`;
+  }
+  if (nameInput) {
+    nameInput.value = '';
+    nameInput.setAttribute('aria-label', `${positionName} 이름 입력`);
+  }
+
+  $('#recruitSetupModal')?.classList.remove('is-hidden');
+  window.setTimeout(() => nameInput?.focus(), 80);
+}
+
+function updateRecruitPreview() {
+  const name = $('#recruitPlayerNameInput')?.value.trim();
+  const previewName = $('#recruitProfileName');
+  if (previewName) previewName.textContent = name || '이름 입력';
+}
+
+function completePlayerRecruitment() {
+  const position = selectedRecruitPosition;
+  const recruitedPlayer = gameState.fieldPlayers[position];
+  const nameInput = $('#recruitPlayerNameInput');
+  const name = nameInput?.value.trim() ?? '';
+
+  if (!POSITION_NAMES[position] || !recruitedPlayer || recruitedPlayer.unlocked) {
+    hideRecruitModals();
+    return;
+  }
+
+  if (!name) {
+    showToast('영입할 선수의 이름을 입력해 주세요.');
+    nameInput?.focus();
+    return;
+  }
+
+  if (gameState.gold < 100) {
+    showToast('선수 영입에는 100G가 필요합니다.');
+    return;
+  }
+
+  gameState.gold -= 100;
+  recruitedPlayer.unlocked = true;
+  recruitedPlayer.name = name;
+  recruitedPlayer.level = 1;
+  recruitedPlayer.attack = 10;
+  saveGameState();
+
+  selectedRecruitPosition = '';
+  hideRecruitModals();
+  renderPlayersScreen();
+  showToast(`${POSITION_NAMES[position]} 영입이 완료되었습니다!`);
 }
 
 function renderDefenseScreen() {
@@ -840,7 +1193,6 @@ function resolveDefensePitch() {
     if (isFirstTutorialPitch) {
       gameState.tutorialFlags.firstDefenseHitDone = true;
       saveGameState();
-      showToast('첫 투구 성공! 수비 모드에서 골드를 모아 공격 선수를 강화하세요.');
     }
     completeDefensePitchTutorialStep();
     return;
@@ -926,7 +1278,8 @@ function applyTutorialDamage() {
 
   const config = getAttackConfigForStage(gameState.currentStage);
   const isCritical = Math.random() < config.criticalChance;
-  const damage = isCritical ? config.attackDamage * 2 : config.attackDamage;
+  const baseDamage = gameState.representativePlayer.attack;
+  const damage = isCritical ? baseDamage * 2 : baseDamage;
 
   attackState.hp = Math.max(0, attackState.hp - damage);
   setMonsterImage('hit');
@@ -1084,7 +1437,10 @@ function handleBottomNavigation(button) {
 
   if (gameState.tutorialFlags.playerTabGuidanceActive) {
     if (target === 'players') {
-      showToast('선수 화면은 다음 단계에서 연결할 예정입니다.');
+      gameState.tutorialFlags.playerTabGuidanceActive = false;
+      saveGameState();
+      setPlayerTabGuidance(false);
+      showScreen('players');
       return;
     }
 
@@ -1118,7 +1474,12 @@ function handleBottomNavigation(button) {
   }
 
   if (target === 'players') {
-    showScreen('representative');
+    if (currentScreenId === 'playersScreen') {
+      showToast('현재 선수 관리 화면입니다.');
+      return;
+    }
+
+    showScreen('players');
     return;
   }
 
@@ -1172,6 +1533,31 @@ function initAttackScreen() {
   });
 }
 
+function initPlayersScreen() {
+  $('#playerManagementList')?.addEventListener('click', (event) => {
+    const upgradeButton = event.target.closest('[data-upgrade-player]');
+    if (upgradeButton) {
+      upgradePlayer(upgradeButton.dataset.upgradePlayer);
+      return;
+    }
+
+    const recruitButton = event.target.closest('[data-recruit-position]');
+    if (recruitButton) {
+      openRecruitConfirmation(recruitButton.dataset.recruitPosition);
+    }
+  });
+
+  $('#recruitConfirmYesButton')?.addEventListener('click', openRecruitSetup);
+  $('#recruitConfirmNoButton')?.addEventListener('click', cancelRecruitment);
+  $('#recruitPlayerNameInput')?.addEventListener('input', updateRecruitPreview);
+  $('#recruitPlayerNameInput')?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      completePlayerRecruitment();
+    }
+  });
+  $('#recruitPlayerSetupButton')?.addEventListener('click', completePlayerRecruitment);
+}
+
 function initBottomNavigation() {
   $$('.bottom-nav-button').forEach((button) => {
     button.addEventListener('click', () => handleBottomNavigation(button));
@@ -1182,6 +1568,7 @@ function initGame() {
   initStartScreen();
   initRepresentativeScreen();
   initAttackScreen();
+  initPlayersScreen();
   initBottomNavigation();
   showScreen('start');
 }
@@ -1195,12 +1582,14 @@ window.BaseballMonsterHunter = {
     saveGameState();
     renderRepresentativeScreen();
     renderAttackScreen();
+    renderPlayersScreen();
   },
   addGold(amount) {
     gameState.gold = Math.max(0, Math.floor(gameState.gold + normalizeNumber(amount)));
     saveGameState();
     renderRepresentativeScreen();
     renderAttackScreen();
+    renderPlayersScreen();
   },
   resetSave() {
     stopAttackTutorial();
@@ -1213,6 +1602,7 @@ window.BaseballMonsterHunter = {
     saveGameState();
     renderRepresentativeScreen();
     renderAttackScreen();
+    renderPlayersScreen();
     showScreen('start');
   },
 };

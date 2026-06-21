@@ -149,6 +149,107 @@
       </nav>
     </section>
 
+    <section id="playersScreen" class="players-screen is-hidden" aria-label="선수 관리 화면">
+      <header class="representative-status players-status" aria-label="현재 게임 상태">
+        <div class="status-slot status-slot--gold">
+          <img class="status-icon" src="assets/icon-gold.png" alt="" draggable="false" />
+          <div class="status-text">
+            <span>Gold</span>
+            <strong id="playersStatusGold">0G</strong>
+          </div>
+        </div>
+
+        <div class="status-slot status-slot--stage">
+          <img class="status-icon" src="assets/icon-stage.png" alt="" draggable="false" />
+          <div class="status-text">
+            <span>Stage</span>
+            <strong id="playersStatusStage">Stage 1</strong>
+          </div>
+        </div>
+
+        <div class="status-slot status-slot--mode">
+          <img class="status-icon" src="assets/icon-mode.png" alt="" draggable="false" />
+          <div class="status-text">
+            <span>Mode</span>
+            <strong id="playersStatusMode">공격</strong>
+          </div>
+        </div>
+      </header>
+
+      <div class="players-scroll-area">
+        <section class="players-title-card">
+          <img src="assets/icon-representative.png" alt="" draggable="false" />
+          <div>
+            <p>TEAM ROSTER</p>
+            <h1>선수 관리</h1>
+          </div>
+        </section>
+
+        <div id="playerManagementList" class="player-management-list" aria-live="polite"></div>
+      </div>
+
+      <nav class="bottom-navigation players-bottom-navigation" aria-label="하단 메뉴">
+        <button class="bottom-nav-button" type="button" data-target="game" aria-label="경기 화면으로 이동">
+          <img src="assets/nav-game-off.png" alt="경기" draggable="false" />
+        </button>
+        <button class="bottom-nav-button is-current" type="button" data-target="players" aria-current="page" aria-label="선수 화면">
+          <img src="assets/nav-player-on.png" alt="선수" draggable="false" />
+        </button>
+        <button class="bottom-nav-button" type="button" data-target="synergy" aria-label="시너지 화면으로 이동">
+          <img src="assets/nav-synergy-off.png" alt="시너지" draggable="false" />
+        </button>
+        <button class="bottom-nav-button" type="button" data-target="log" aria-label="로그 화면으로 이동">
+          <img src="assets/nav-log-off.png" alt="로그" draggable="false" />
+        </button>
+        <button class="bottom-nav-button" type="button" data-target="settings" aria-label="설정 화면으로 이동">
+          <img src="assets/nav-settings-off.png" alt="설정" draggable="false" />
+        </button>
+      </nav>
+
+      <div id="recruitConfirmModal" class="recruit-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="recruitConfirmTitle">
+        <div class="recruit-confirm-card">
+          <p class="recruit-modal-kicker">PLAYER RECRUIT</p>
+          <h2 id="recruitConfirmTitle">선수 영입</h2>
+          <p><strong id="recruitConfirmPosition">포수</strong> 영입을 진행하시겠습니까?</p>
+          <p class="recruit-cost-guide">영입 비용 <strong>100G</strong></p>
+          <div class="recruit-confirm-actions">
+            <button id="recruitConfirmYesButton" class="recruit-confirm-button is-yes" type="button">예</button>
+            <button id="recruitConfirmNoButton" class="recruit-confirm-button is-no" type="button">아니오</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="recruitSetupModal" class="recruit-modal recruit-setup-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="recruitSetupTitle">
+        <div class="recruit-setup-card">
+          <div class="recruit-setup-heading">
+            <div>
+              <p>신규 선수 영입</p>
+              <h2 id="recruitSetupTitle">선수 이름 설정</h2>
+            </div>
+            <span id="recruitFixedPosition">포수</span>
+          </div>
+
+          <div class="recruit-profile-card">
+            <div class="recruit-profile-image-area">
+              <img id="recruitProfileImage" src="assets/player-catcher.png" alt="영입 선수 프로필" draggable="false" />
+            </div>
+            <div class="recruit-profile-info">
+              <p id="recruitProfilePosition">포수</p>
+              <h3 id="recruitProfileName">이름 입력</h3>
+              <div><span>레벨</span><strong>Lv. 1</strong></div>
+              <div><span>공격력</span><strong>10</strong></div>
+            </div>
+          </div>
+
+          <div class="recruit-name-setup">
+            <label for="recruitPlayerNameInput">선수 이름</label>
+            <input id="recruitPlayerNameInput" type="text" maxlength="8" autocomplete="off" placeholder="이름을 입력하세요" />
+            <button id="recruitPlayerSetupButton" type="button">설정 <span>100G</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="attackScreen" class="attack-screen is-hidden" aria-label="공격 모드 튜토리얼 화면">
       <header class="representative-status attack-status" aria-label="현재 게임 상태">
         <div class="status-slot status-slot--gold">
