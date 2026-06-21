@@ -1,0 +1,355 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --screen-width: min(100vw, 520px);
+  --screen-height: min(100vh, 924px);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  overflow: hidden;
+  background: #03132b;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+  color: #fff;
+}
+
+button {
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.game-shell {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at center, rgba(0, 120, 255, 0.22), transparent 42%),
+    #020817;
+}
+
+.start-screen {
+  position: relative;
+  width: var(--screen-width);
+  height: 100vh;
+  max-height: 924px;
+  aspect-ratio: 941 / 1672;
+  overflow: hidden;
+  isolation: isolate;
+  background: #0b66cc;
+  box-shadow: 0 0 36px rgba(0, 0, 0, 0.6);
+}
+
+.background-image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  pointer-events: none;
+}
+
+.top-ui {
+  position: absolute;
+  top: calc(18px + var(--safe-top));
+  left: 0;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(14px, 4vw, 24px);
+}
+
+.gold-box {
+  position: relative;
+  width: clamp(128px, 31vw, 154px);
+  aspect-ratio: 2048 / 682;
+  filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.26));
+}
+
+.gold-box__image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+}
+
+.gold-box__text {
+  position: absolute;
+  top: 50%;
+  left: 37%;
+  transform: translateY(-52%);
+  color: #ffd84a;
+  font-size: clamp(18px, 5.1vw, 28px);
+  font-weight: 950;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  text-shadow:
+    0 2px 0 rgba(42, 23, 0, 0.85),
+    0 3px 7px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+}
+
+.image-button {
+  display: block;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  transform-origin: center;
+  transition: transform 130ms ease, filter 130ms ease;
+}
+
+.image-button img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.image-button:active {
+  transform: scale(0.95);
+  filter: brightness(0.95);
+}
+
+.image-button:focus-visible,
+.continue-button:focus-visible {
+  outline: 4px solid rgba(255, 255, 255, 0.86);
+  outline-offset: 3px;
+  border-radius: 24px;
+}
+
+.settings-button {
+  width: clamp(106px, 25vw, 132px);
+  aspect-ratio: 2048 / 682;
+  filter: drop-shadow(0 5px 7px rgba(0, 0, 0, 0.28));
+}
+
+.logo-area {
+  position: absolute;
+  top: clamp(68px, 9.6vh, 104px);
+  left: 50%;
+  z-index: 3;
+  width: min(88%, 430px);
+  transform: translateX(-50%);
+  animation: logoDrop 620ms cubic-bezier(0.2, 0.9, 0.28, 1.15) both;
+}
+
+.main-logo {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 11px 13px rgba(0, 0, 0, 0.28));
+  user-select: none;
+  pointer-events: none;
+}
+
+.character-area {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: clamp(166px, 22.7vh, 216px);
+  z-index: 2;
+  height: min(35vh, 318px);
+  pointer-events: none;
+}
+
+.player-image,
+.monster-image {
+  position: absolute;
+  bottom: 0;
+  display: block;
+  height: auto;
+  user-select: none;
+  filter: drop-shadow(0 13px 9px rgba(0, 0, 0, 0.28));
+}
+
+.player-image {
+  left: -18%;
+  width: min(78%, 390px);
+  transform-origin: 54% 92%;
+  animation: playerPop 560ms 180ms cubic-bezier(0.2, 0.9, 0.28, 1.15) both;
+}
+
+.monster-image {
+  right: -17%;
+  width: min(84%, 426px);
+  transform-origin: 48% 92%;
+  animation: monsterPop 560ms 280ms cubic-bezier(0.2, 0.9, 0.28, 1.15) both, monsterIdle 2.7s 1s ease-in-out infinite;
+}
+
+.bottom-ui {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(34px + var(--safe-bottom));
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 1.7vh, 16px);
+  padding: 0 clamp(20px, 6vw, 34px);
+}
+
+.start-button {
+  width: min(100%, 444px);
+  aspect-ratio: 2048 / 682;
+  filter: drop-shadow(0 9px 10px rgba(96, 48, 0, 0.45));
+  animation: startPulse 1.7s ease-in-out infinite;
+}
+
+.continue-button {
+  min-width: min(52%, 180px);
+  height: clamp(42px, 6.2vh, 54px);
+  padding: 0 24px;
+  border: 2px solid rgba(255, 255, 255, 0.46);
+  border-radius: 999px;
+  background: rgba(16, 31, 28, 0.62);
+  color: rgba(255, 255, 255, 0.94);
+  font-size: clamp(18px, 4.8vw, 25px);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+  box-shadow:
+    inset 0 2px 5px rgba(255, 255, 255, 0.18),
+    0 4px 8px rgba(0, 0, 0, 0.22);
+  opacity: 0.92;
+}
+
+.continue-button__arrow {
+  display: inline-block;
+  margin-left: 12px;
+  font-size: 1.25em;
+  line-height: 0;
+}
+
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: calc(150px + var(--safe-bottom));
+  z-index: 10;
+  max-width: calc(100% - 42px);
+  padding: 12px 16px;
+  border-radius: 999px;
+  background: rgba(0, 21, 58, 0.84);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  text-align: center;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  transform: translate(-50%, 14px);
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease;
+  white-space: nowrap;
+}
+
+.toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@keyframes logoDrop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -24px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+@keyframes playerPop {
+  from {
+    opacity: 0;
+    transform: translateX(-22px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes monsterPop {
+  from {
+    opacity: 0;
+    transform: translateX(22px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes monsterIdle {
+  0%, 100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -5px;
+  }
+}
+
+@keyframes startPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.025);
+  }
+}
+
+@media (min-width: 760px) {
+  .start-screen {
+    border-radius: 20px;
+  }
+}
+
+@media (max-height: 740px) {
+  .logo-area {
+    top: 60px;
+    width: min(78%, 360px);
+  }
+
+  .character-area {
+    bottom: 142px;
+    height: 250px;
+  }
+
+  .bottom-ui {
+    bottom: calc(22px + var(--safe-bottom));
+  }
+
+  .continue-button {
+    height: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
