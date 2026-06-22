@@ -283,6 +283,13 @@ const MONSTER_IMAGES = {
   boss: 'assets/monster-boss.png',
 };
 
+const BOSS_MONSTER_IMAGES = {
+  normal: 'assets/monster-boss.png',
+  proud: 'assets/monster-boss-proud.png',
+  hit: 'assets/monster-boss-hit.png',
+  crying: 'assets/monster-boss-hit.png',
+};
+
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
@@ -1776,7 +1783,7 @@ function setMonsterImage(state) {
 
   const config = getAttackConfigForStage(gameState.currentStage);
   battleMonster.src = config.isBoss
-    ? MONSTER_IMAGES.boss
+    ? BOSS_MONSTER_IMAGES[state] ?? BOSS_MONSTER_IMAGES.normal
     : MONSTER_IMAGES[state] ?? MONSTER_IMAGES.normal;
   battleMonster.classList.toggle('is-boss', Boolean(config.isBoss));
   battleMonster.classList.toggle('is-hit', state === 'hit');
@@ -2302,28 +2309,6 @@ function handleBottomNavigation(button) {
             ? 'attack'
             : 'start';
     showScreen('settings');
-    return;
-  }
-
-  if (currentScreenId === 'settingsScreen') {
-    const returnTarget =
-      settingsReturnScreen === 'players'
-        ? 'players'
-        : settingsReturnScreen === 'representative'
-          ? 'representative'
-          : settingsReturnScreen === 'start'
-            ? 'start'
-            : 'attack';
-
-    if (
-      (target === 'players' && returnTarget === 'players') ||
-      (target === 'game' && ['attack', 'representative', 'start'].includes(returnTarget))
-    ) {
-      showScreen(returnTarget);
-      return;
-    }
-
-    showToast('설정을 열기 전 화면으로 돌아가 주세요.');
     return;
   }
 
