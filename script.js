@@ -349,8 +349,8 @@ function getSynergyState(teamKey) {
   }));
   const active = members.every((member) => member.owned);
   const minimumLevel = active ? Math.min(...members.map((member) => member.level)) : 0;
-  const step = active ? Math.floor(minimumLevel / 10) : 0;
-  const nextRequiredLevel = active ? (step + 1) * 10 : 1;
+  const step = active ? 1 + Math.floor(minimumLevel / 10) : 0;
+  const nextRequiredLevel = active ? step * 10 : 1;
 
   return { ...config, members, active, minimumLevel, step, nextRequiredLevel };
 }
@@ -1118,9 +1118,22 @@ function selectPlayersSection(sectionName) {
   $('#playersScreen .players-scroll-area')?.scrollTo({ top: 0, behavior: 'smooth' });
 
   if (tutorialStep === 'openSynergyTab' && isSynergy) {
-    setTutorialStep('synergyPreview');
-    showToast('시너지 화면을 열었습니다. 다음 단계에서 효과를 살펴볼게요!');
+    setTutorialStep('tutorialCompletePending');
+    $('#tutorialCompleteModal')?.classList.remove('is-hidden');
   }
+}
+
+function completeBasicTutorial() {
+  gameState.tutorialFlags.tutorialComplete = true;
+  gameState.tutorialFlags.tutorialStep = 'completed';
+  gameState.tutorialFlags.playerTabGuidanceActive = false;
+  saveGameState();
+
+  $('#tutorialCompleteModal')?.classList.add('is-hidden');
+  setPlayerTabGuidance(false);
+  renderNavigationLocks();
+  renderTutorialGuidance();
+  showToast('튜토리얼 완료! 기본 메뉴와 모드 전환이 해금되었습니다.');
 }
 
 function getPositionProfileImage(position) {
@@ -1914,6 +1927,9 @@ function hideAllModals() {
   $('#resetConfirmModal')?.classList.add('is-hidden');
   $('#modeSwitchModal')?.classList.add('is-hidden');
   $('#synergyIntroModal')?.classList.add('is-hidden');
+  if (gameState.tutorialFlags.tutorialComplete) {
+    $('#tutorialCompleteModal')?.classList.add('is-hidden');
+  }
 }
 
 function showStageClearModal() {
@@ -2384,6 +2400,7 @@ function initPlayersScreen() {
     $('#representativeConfirmModal')?.classList.add('is-hidden');
     $('#playerActionModal')?.classList.remove('is-hidden');
   });
+  $('#tutorialCompleteConfirmButton')?.addEventListener('click', completeBasicTutorial);
 }
 
 function initBottomNavigation() {

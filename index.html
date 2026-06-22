@@ -224,7 +224,7 @@
             <ul>
               <li>팀에 포함된 <strong>모든 포지션</strong>을 영입해야 효과가 적용됩니다.</li>
               <li>팀 내 <strong>가장 레벨이 낮은 선수</strong>가 기준 선수가 됩니다.</li>
-              <li>모든 선수가 모인 뒤 기준 선수 레벨이 <strong>10이 될 때마다</strong> 1단계씩 상승합니다.</li>
+              <li>모든 선수가 모이면 <strong>1단계</strong>로 활성화되며, 기준 선수 레벨이 <strong>10이 될 때마다</strong> 1단계씩 상승합니다.</li>
             </ul>
             <div class="synergy-effect-legend">
               <span><b>배터리팀</b> 골드 획득량</span>
@@ -348,6 +348,17 @@
             <button id="confirmRepresentativeButton" class="recruit-confirm-button is-yes" type="button">예</button>
             <button id="cancelRepresentativeButton" class="recruit-confirm-button is-no" type="button">아니오</button>
           </div>
+        </div>
+      </div>
+
+      <div id="tutorialCompleteModal" class="recruit-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="tutorialCompleteTitle">
+        <div class="tutorial-complete-card">
+          <span class="tutorial-complete-emblem" aria-hidden="true">★</span>
+          <p class="recruit-modal-kicker">TUTORIAL COMPLETE</p>
+          <h2 id="tutorialCompleteTitle">기본 튜토리얼 완료!</h2>
+          <p>이제 게임의 기본적인 진행 방법을 모두 익혔습니다.</p>
+          <strong>나만의 선수들을 육성해서<br />더 높은 스테이지에 도전해 보세요!</strong>
+          <button id="tutorialCompleteConfirmButton" class="stage-clear-button" type="button">확인</button>
         </div>
       </div>
     </section>

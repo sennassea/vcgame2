@@ -1900,6 +1900,67 @@ button {
   box-shadow: inset 0 2px 7px rgba(255, 255, 255, 0.15), 0 18px 34px rgba(0, 0, 0, 0.5);
 }
 
+.tutorial-complete-card {
+  width: min(100%, 410px);
+  padding: 25px 21px 22px;
+  border: 3px solid #ffdc65;
+  border-radius: 28px;
+  color: #fff;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 4%, rgba(255, 221, 85, 0.25), transparent 34%),
+    linear-gradient(180deg, #0871b4 0%, #043965 52%, #031a37 100%);
+  box-shadow:
+    inset 0 2px 8px rgba(255, 255, 255, 0.18),
+    0 19px 38px rgba(0, 0, 0, 0.54),
+    0 0 25px rgba(255, 219, 76, 0.22);
+}
+
+.tutorial-complete-emblem {
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  margin: 0 auto 10px;
+  border: 3px solid #fff3aa;
+  border-radius: 50%;
+  color: #563500;
+  background: linear-gradient(180deg, #fff287, #ffb718);
+  font-size: 36px;
+  text-shadow: 0 1px 0 #fff;
+  box-shadow: 0 0 19px rgba(255, 222, 91, 0.65);
+}
+
+.tutorial-complete-card h2 {
+  margin-top: 6px;
+  font-size: 29px;
+  font-weight: 1000;
+  letter-spacing: -0.065em;
+  text-shadow: var(--shadow-text);
+}
+
+.tutorial-complete-card > p:not(.recruit-modal-kicker) {
+  margin-top: 14px;
+  color: #c7daec;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.tutorial-complete-card > strong {
+  display: block;
+  margin-top: 14px;
+  color: #ffdc65;
+  font-size: 17px;
+  font-weight: 1000;
+  line-height: 1.45;
+  text-shadow: var(--shadow-text);
+}
+
+.tutorial-complete-card .stage-clear-button {
+  width: 100%;
+  margin-top: 22px;
+}
+
 .modal-close-button {
   position: absolute;
   top: 10px;
