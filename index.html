@@ -213,12 +213,27 @@
         </section>
 
         <section id="synergyPanel" class="players-section-panel is-hidden" role="tabpanel" aria-labelledby="synergyTab">
-          <div class="synergy-coming-soon">
-            <span class="synergy-coming-soon-icon" aria-hidden="true">◆</span>
-            <p>TEAM SYNERGY</p>
-            <h1>시너지</h1>
-            <strong>준비 중</strong>
-            <span>보유 선수 조합에 따른 시너지 효과가 추가될 예정입니다.</span>
+          <section class="synergy-guide-card" aria-labelledby="synergyGuideTitle">
+            <div class="synergy-guide-heading">
+              <span aria-hidden="true">◆</span>
+              <div>
+                <p>TEAM SYNERGY GUIDE</p>
+                <h2 id="synergyGuideTitle">시너지 발동 조건</h2>
+              </div>
+            </div>
+            <ul>
+              <li>팀에 포함된 <strong>모든 포지션</strong>을 영입해야 효과가 적용됩니다.</li>
+              <li>팀 내 <strong>가장 레벨이 낮은 선수</strong>가 기준 선수가 됩니다.</li>
+              <li>모든 선수가 모이면 1단계, 기준 선수 레벨이 <strong>10 오를 때마다</strong> 단계가 상승합니다.</li>
+            </ul>
+            <div class="synergy-effect-legend">
+              <span><b>배터리팀</b> 골드 획득량</span>
+              <span><b>내야팀</b> Catch 아웃 확률</span>
+              <span><b>외야팀</b> 치명타 확률</span>
+            </div>
+          </section>
+
+          <div id="synergyTeamList" class="synergy-team-list" aria-live="polite">
           </div>
         </section>
       </div>

@@ -38,6 +38,48 @@ const PLAYER_PROFILE_IMAGES = {
   outfielder: 'assets/player-outfielder.png',
 };
 
+const SYNERGY_CONFIG = {
+  battery: {
+    name: '배터리팀',
+    subtitle: 'BATTERY TEAM',
+    positions: ['pitcher', 'catcher'],
+    effectName: '골드 획득량 증가',
+    effectPerStage: 10,
+    effectUnit: '%',
+    className: 'battery',
+  },
+  infield: {
+    name: '내야팀',
+    subtitle: 'INFIELD TEAM',
+    positions: ['first', 'second', 'third', 'shortstop'],
+    effectName: 'Catch 아웃 확률 증가',
+    effectPerStage: 5,
+    effectUnit: '%p',
+    className: 'infield',
+  },
+  outfield: {
+    name: '외야팀',
+    subtitle: 'OUTFIELD TEAM',
+    positions: ['left', 'center', 'right'],
+    effectName: '치명타 확률 증가',
+    effectPerStage: 5,
+    effectUnit: '%p',
+    className: 'outfield',
+  },
+};
+
+const SYNERGY_POSITION_INFO = {
+  pitcher: { name: '투수', image: 'assets/synergy-pitcher.png' },
+  catcher: { name: '포수', image: 'assets/synergy-catcher.png' },
+  first: { name: '1루수', image: 'assets/synergy-first.png' },
+  second: { name: '2루수', image: 'assets/synergy-second.png' },
+  third: { name: '3루수', image: 'assets/synergy-third.png' },
+  shortstop: { name: '유격수', image: 'assets/synergy-shortstop.png' },
+  left: { name: '좌익수', image: 'assets/synergy-left.png' },
+  center: { name: '중견수', image: 'assets/synergy-center.png' },
+  right: { name: '우익수', image: 'assets/synergy-right.png' },
+};
+
 const DEFAULT_GAME_STATE = {
   gold: 0,
   currentStage: 1,
@@ -259,7 +301,7 @@ function getAttackConfigForStage(stage) {
 
 function getDefenseRewards() {
   const stageMultiplier = 1 + (Math.max(1, gameState.currentStage) - 1) * 0.15;
-  const batterySynergyMultiplier = 1;
+  const batterySynergyMultiplier = 1 + getSynergyEffectValue('battery') / 100;
 
   return {
     hit: Math.round(10 * stageMultiplier * batterySynergyMultiplier),
@@ -275,8 +317,47 @@ function getPitcherHitChance() {
 }
 
 function getFielderCatchChance() {
-  const infieldSynergyStep = 0;
-  return Math.min(0.1 + infieldSynergyStep * 0.01, 0.6);
+  return Math.min(0.1 + getSynergyEffectValue('infield') / 100, 0.6);
+}
+
+function getPositionRosterState(position) {
+  const representative = gameState.representativePlayer;
+
+  if (position === 'pitcher') {
+    return {
+      owned: Boolean(gameState.tutorialFlags.representativePitcherSet || representative.pitcherName),
+      level: representative.pitcherLevel,
+    };
+  }
+
+  if (representative.position === position && gameState.tutorialFlags.representativeBatterSet) {
+    return { owned: true, level: representative.level };
+  }
+
+  const player = gameState.fieldPlayers[position];
+  return {
+    owned: Boolean(player?.unlocked),
+    level: player?.level ?? 1,
+  };
+}
+
+function getSynergyState(teamKey) {
+  const config = SYNERGY_CONFIG[teamKey];
+  const members = config.positions.map((position) => ({
+    position,
+    ...getPositionRosterState(position),
+  }));
+  const active = members.every((member) => member.owned);
+  const minimumLevel = active ? Math.min(...members.map((member) => member.level)) : 0;
+  const step = active ? 1 + Math.floor(minimumLevel / 10) : 0;
+  const nextRequiredLevel = active ? step * 10 : 1;
+
+  return { ...config, members, active, minimumLevel, step, nextRequiredLevel };
+}
+
+function getSynergyEffectValue(teamKey) {
+  const state = getSynergyState(teamKey);
+  return state.step * state.effectPerStage;
 }
 
 function getLevelUpCost(level) {
@@ -943,7 +1024,68 @@ function renderPlayersScreen() {
     lockedPositions.map(createLockedPlayerCard).join('');
 
   renderCommonStatus();
+  renderSynergyScreen();
   renderTutorialGuidance();
+}
+
+function renderSynergyScreen() {
+  const list = $('#synergyTeamList');
+  if (!list) return;
+
+  list.innerHTML = Object.keys(SYNERGY_CONFIG).map((teamKey) => {
+    const state = getSynergyState(teamKey);
+    const missingNames = state.members
+      .filter((member) => !member.owned)
+      .map((member) => SYNERGY_POSITION_INFO[member.position].name);
+    const currentEffect = state.active
+      ? `${state.effectName} +${state.step * state.effectPerStage}${state.effectUnit}`
+      : '효과 미적용';
+    const nextCondition = state.active
+      ? `모든 팀원이 Lv. ${state.nextRequiredLevel} 이상`
+      : `${missingNames.join(', ')} 영입 필요`;
+
+    const membersHtml = state.members.map((member) => {
+      const info = SYNERGY_POSITION_INFO[member.position];
+      return `
+        <div class="synergy-member ${member.owned ? 'is-owned' : 'is-missing'}">
+          <div class="synergy-member-image">
+            <img src="${info.image}" alt="${info.name}" draggable="false" />
+            ${member.owned ? '' : '<span class="synergy-member-lock">LOCK</span>'}
+          </div>
+          <strong>${info.name}</strong>
+          <span>${member.owned ? `Lv. ${member.level}` : '미영입'}</span>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <article class="synergy-team-card is-${state.className} ${state.active ? 'is-active' : 'is-inactive'}">
+        <header class="synergy-team-header">
+          <div>
+            <p>${state.subtitle}</p>
+            <h3>${state.name}</h3>
+          </div>
+          <span class="synergy-state-badge">${state.active ? 'ACTIVE' : 'LOCKED'}</span>
+        </header>
+        <div class="synergy-team-body">
+          <div class="synergy-member-grid synergy-member-grid--${state.members.length}">
+            ${membersHtml}
+          </div>
+          <div class="synergy-team-info">
+            <div class="synergy-step-box">
+              <span>현재 단계</span>
+              <strong>${state.step}<small>단계</small></strong>
+            </div>
+            <dl>
+              <div><dt>적용 효과</dt><dd>${currentEffect}</dd></div>
+              <div><dt>기준 선수</dt><dd>${state.active ? `팀 내 최저 Lv. ${state.minimumLevel}` : '팀 미완성'}</dd></div>
+              <div><dt>다음 단계</dt><dd>${nextCondition}</dd></div>
+            </dl>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join('');
 }
 
 function selectPlayersSection(sectionName) {
@@ -1660,7 +1802,11 @@ function applyTutorialDamage() {
   }
 
   const config = getAttackConfigForStage(gameState.currentStage);
-  const isCritical = Math.random() < config.criticalChance;
+  const criticalChance = Math.min(
+    config.criticalChance + getSynergyEffectValue('outfield') / 100,
+    0.75
+  );
+  const isCritical = Math.random() < criticalChance;
   const baseDamage = gameState.representativePlayer.attack;
   const damage = isCritical ? baseDamage * 2 : baseDamage;
 
