@@ -194,6 +194,11 @@
       </header>
 
       <div class="players-scroll-area">
+        <div id="playersTutorialBubble" class="guided-tutorial-bubble players-guided-bubble is-hidden" role="note">
+          <strong id="playersTutorialBubbleTitle">튜토리얼</strong>
+          <span id="playersTutorialBubbleText"></span>
+        </div>
+
         <div class="players-section-tabs" role="tablist" aria-label="선수 메뉴">
           <button id="playerManagementTab" class="players-section-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="playerManagementPanel" data-player-section="management">
             선수 관리
@@ -417,13 +422,13 @@
           </div>
         </div>
 
-        <div class="status-slot status-slot--mode">
+        <button class="status-slot status-slot--mode mode-switch-button" type="button" data-mode-switch aria-label="현재 모드">
           <img class="status-icon" src="assets/icon-mode.png" alt="" draggable="false" />
           <div class="status-text">
             <span>Mode</span>
             <strong id="attackStatusMode">공격</strong>
           </div>
-        </div>
+        </button>
       </header>
 
       <div class="attack-play-area">
@@ -500,11 +505,16 @@
 
       <div id="playerTabInputLock" class="tutorial-input-lock is-hidden" aria-hidden="true"></div>
 
+      <div id="attackTutorialBubble" class="guided-tutorial-bubble is-hidden" role="note">
+        <strong id="attackTutorialBubbleTitle">튜토리얼</strong>
+        <span id="attackTutorialBubbleText"></span>
+      </div>
+
       <div id="stageClearModal" class="stage-clear-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="stageClearTitle">
         <div class="stage-clear-card">
           <p class="stage-clear-kicker">CLEAR</p>
           <h2 id="stageClearTitle">1스테이지 클리어!</h2>
-          <p>A몬스터를 처치했어요.<br />확인을 누르면 다음 스테이지로 넘어갑니다.</p>
+          <p><strong id="stageClearMonsterName">A 몬스터 Lv . 1</strong>을 처치했어요.<br />확인을 누르면 다음 스테이지로 넘어갑니다.</p>
           <button id="stageClearConfirmButton" class="stage-clear-button" type="button">확인</button>
         </div>
       </div>
@@ -524,6 +534,27 @@
           <h2 id="defenseSupportTitle">100G를 지원합니다!</h2>
           <p>지원 골드로 선수를 업그레이드해 보세요.<br />확인을 누른 뒤 하단의 <strong>선수</strong> 탭을 선택하세요.</p>
           <button id="defenseSupportConfirmButton" class="defense-support-button" type="button">확인</button>
+        </div>
+      </div>
+
+      <div id="modeSwitchModal" class="recruit-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="modeSwitchTitle">
+        <div class="recruit-confirm-card">
+          <p class="recruit-modal-kicker">CHANGE MODE</p>
+          <h2 id="modeSwitchTitle">공격 모드로 전환</h2>
+          <p id="modeSwitchDescription">공격 모드로 전환할까요?</p>
+          <div class="recruit-confirm-actions">
+            <button id="confirmModeSwitchButton" class="recruit-confirm-button is-yes" type="button">예</button>
+            <button id="cancelModeSwitchButton" class="recruit-confirm-button is-no" type="button">아니오</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="synergyIntroModal" class="defense-support-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="synergyIntroTitle">
+        <div class="defense-support-card">
+          <p class="defense-support-kicker">SYNERGY TUTORIAL</p>
+          <h2 id="synergyIntroTitle">시너지에 대해 알려드릴게요!</h2>
+          <p>새로운 선수를 영입할 수 있도록 <strong>100G</strong>를 지원합니다.<br />확인을 누른 뒤 하단의 <strong>선수</strong> 탭을 선택하세요.</p>
+          <button id="synergyIntroConfirmButton" class="defense-support-button" type="button">확인</button>
         </div>
       </div>
     </section>

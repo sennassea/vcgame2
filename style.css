@@ -292,6 +292,18 @@ button {
     0 4px 8px rgba(0, 0, 0, 0.22);
 }
 
+.mode-switch-button {
+  font: inherit;
+  text-align: left;
+}
+
+.mode-switch-button.is-tutorial-target {
+  z-index: 35;
+  cursor: pointer;
+  animation: playerTabPulse 900ms ease-in-out infinite;
+  filter: brightness(1.18) drop-shadow(0 0 12px rgba(255, 220, 79, 0.9));
+}
+
 .status-icon {
   flex: 0 0 auto;
   width: 30px;
@@ -797,13 +809,13 @@ button {
   z-index: 32;
 }
 
-.attack-screen.is-defense-support-pending .bottom-nav-button {
+.attack-screen.is-defense-support-pending .bottom-nav-button:not([data-target="settings"]) {
   opacity: 0.42;
   filter: grayscale(0.85);
   pointer-events: none;
 }
 
-.attack-screen.is-player-tab-guided .bottom-nav-button:not([data-target="players"]) {
+.attack-screen.is-player-tab-guided .bottom-nav-button:not([data-target="players"]):not([data-target="settings"]) {
   opacity: 0.42;
   filter: grayscale(0.85);
   pointer-events: none;
@@ -833,6 +845,98 @@ button {
   transform: translateX(-50%);
   animation: playerTabArrow 700ms ease-in-out infinite;
   pointer-events: none;
+}
+
+.guided-tutorial-bubble {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  z-index: 34;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 15px;
+  border: 2px solid #ffdc65;
+  border-radius: 17px;
+  color: #fff;
+  background: linear-gradient(180deg, rgba(7, 87, 151, 0.98), rgba(3, 31, 68, 0.98));
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.42), 0 0 14px rgba(255, 218, 75, 0.25);
+  pointer-events: none;
+}
+
+.guided-tutorial-bubble strong {
+  color: #ffdc65;
+  font-size: 14px;
+  font-weight: 1000;
+}
+
+.guided-tutorial-bubble span {
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+#attackTutorialBubble {
+  top: calc(var(--status-height) + var(--safe-top) + 9px);
+}
+
+.players-guided-bubble {
+  position: relative;
+  left: auto;
+  right: auto;
+  margin-bottom: 10px;
+}
+
+.players-screen.is-upgrade-guided .player-management-card,
+.players-screen.is-recruit-guided .player-management-card,
+.players-screen.is-synergy-tab-guided .player-management-card,
+.players-screen.is-upgrade-guided .players-section-tab,
+.players-screen.is-recruit-guided .players-section-tab,
+.players-screen.is-synergy-tab-guided .players-section-tab {
+  pointer-events: none;
+  opacity: 0.5;
+  filter: grayscale(0.65);
+}
+
+.players-screen.is-upgrade-guided [data-upgrade-player].is-tutorial-target,
+.players-screen.is-recruit-guided [data-recruit-position="first"].is-tutorial-target,
+.players-screen.is-synergy-tab-guided #synergyTab.is-tutorial-target {
+  position: relative;
+  z-index: 3;
+  pointer-events: auto;
+  opacity: 1;
+  filter: none;
+  animation: playerTabPulse 900ms ease-in-out infinite;
+  box-shadow: 0 0 15px rgba(255, 220, 79, 0.8);
+}
+
+.players-screen.is-upgrade-guided .player-management-card:has([data-upgrade-player].is-tutorial-target),
+.players-screen.is-recruit-guided .player-management-card:has([data-recruit-position="first"].is-tutorial-target) {
+  opacity: 1;
+  filter: none;
+}
+
+.players-screen.is-return-game-guided .bottom-nav-button:not([data-target="game"]):not([data-target="settings"]) {
+  pointer-events: none;
+  opacity: 0.42;
+  filter: grayscale(0.85);
+}
+
+.players-screen.is-return-game-guided .bottom-nav-button[data-target="game"] {
+  z-index: 3;
+  animation: playerTabPulse 900ms ease-in-out infinite;
+  filter: brightness(1.18) drop-shadow(0 0 13px rgba(255, 218, 67, 0.96));
+}
+
+.attack-screen.is-mode-switch-guided .attack-play-area {
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.attack-screen.is-mode-switch-guided .attack-bottom-navigation .bottom-nav-button:not([data-target="settings"]) {
+  pointer-events: none;
+  opacity: 0.42;
+  filter: grayscale(0.85);
 }
 
 @keyframes playerTabPulse {

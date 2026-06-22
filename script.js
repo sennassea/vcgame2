@@ -73,6 +73,11 @@ const DEFAULT_GAME_STATE = {
     firstDefensePitchCount: 0,
     defenseSupportGranted: false,
     playerTabGuidanceActive: false,
+    tutorialStep: '',
+    stage2Cleared: false,
+    synergySupportGranted: false,
+    firstBasemanRecruitedForSynergy: false,
+    tutorialComplete: false,
   },
 };
 
@@ -93,6 +98,18 @@ const STAGE_CONFIGS = {
     monsterName: 'A 몬스터',
     monsterLevel: 2,
     maxHp: 160,
+    timeLimit: 30,
+    attackDamage: 10,
+    criticalChance: 0,
+    attackCycleMs: 2000,
+    frame2DelayMs: 520,
+    frame3DelayMs: 1040,
+    resetDelayMs: 1450,
+  },
+  3: {
+    monsterName: 'A 몬스터',
+    monsterLevel: 3,
+    maxHp: 300,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0,
@@ -147,6 +164,7 @@ let defenseTimeoutIds = [];
 let defenseSupportModalTimerId = null;
 let selectedRecruitPosition = '';
 let selectedPlayerTarget = '';
+let settingsReturnScreen = 'attack';
 let gameState = loadGameState();
 let attackState = createAttackState();
 let defenseState = { isRunning: false };
@@ -295,8 +313,7 @@ function getRepresentativeStatValue() {
 }
 
 function isTutorialInProgress() {
-  return !gameState.tutorialFlags.defenseSupportGranted ||
-    gameState.tutorialFlags.playerTabGuidanceActive;
+  return !gameState.tutorialFlags.tutorialComplete;
 }
 
 function showToast(message) {
@@ -421,7 +438,7 @@ function setPlayerTabGuidance(isActive) {
   playerButton?.classList.toggle('is-tutorial-target', isActive);
 
   $$('#attackScreen .bottom-nav-button').forEach((button) => {
-    if (button.dataset.target !== 'players') {
+    if (!['players', 'settings'].includes(button.dataset.target)) {
       button.setAttribute('aria-disabled', String(isActive));
     }
   });
@@ -435,9 +452,81 @@ function beginPlayerTabGuidance() {
   hideDefenseSupportModal();
   setDefenseSupportPending(false);
   gameState.tutorialFlags.playerTabGuidanceActive = true;
+  gameState.tutorialFlags.tutorialStep = 'openPlayersForUpgrade';
   saveGameState();
   setPlayerTabGuidance(true);
   showToast('화살표가 가리키는 선수 탭을 선택하세요.');
+}
+
+function setTutorialStep(step) {
+  gameState.tutorialFlags.tutorialStep = step;
+  saveGameState();
+  renderTutorialGuidance();
+}
+
+function renderTutorialGuidance() {
+  const step = gameState.tutorialFlags.tutorialStep;
+  const playersScreen = $('#playersScreen');
+  const attackScreen = $('#attackScreen');
+  const playersBubble = $('#playersTutorialBubble');
+  const attackBubble = $('#attackTutorialBubble');
+
+  [
+    'is-upgrade-guided',
+    'is-return-game-guided',
+    'is-recruit-guided',
+    'is-synergy-tab-guided',
+  ].forEach((className) => playersScreen?.classList.remove(className));
+  attackScreen?.classList.remove('is-mode-switch-guided');
+  playersBubble?.classList.add('is-hidden');
+  attackBubble?.classList.add('is-hidden');
+  $$('.player-upgrade-button, .player-recruit-button, .players-section-tab, [data-mode-switch]')
+    .forEach((element) => element.classList.remove('is-tutorial-target'));
+
+  const showPlayersGuide = (title, text) => {
+    if ($('#playersTutorialBubbleTitle')) $('#playersTutorialBubbleTitle').textContent = title;
+    if ($('#playersTutorialBubbleText')) $('#playersTutorialBubbleText').textContent = text;
+    playersBubble?.classList.remove('is-hidden');
+  };
+
+  if (step === 'upgradeBatter') {
+    playersScreen?.classList.add('is-upgrade-guided');
+    showPlayersGuide(
+      '대표 타자를 강화하세요!',
+      '타자를 레벨업하면 공격력이 올라갑니다. 지원받은 골드로 대표 타자를 한 번 강화해 공격 모드에 다시 도전해 보세요.'
+    );
+    $('[data-upgrade-player="batter"]')?.classList.add('is-tutorial-target');
+  } else if (step === 'upgradePitcher') {
+    playersScreen?.classList.add('is-upgrade-guided');
+    showPlayersGuide(
+      '대표 투수를 강화하세요!',
+      '투수를 레벨업하면 Hit 확률이 올라갑니다. 대표 투수를 한 번 강화해 수비 모드에서 더 많은 골드를 획득해 보세요.'
+    );
+    $('[data-upgrade-player="pitcher"]')?.classList.add('is-tutorial-target');
+  } else if (step === 'returnToGame') {
+    playersScreen?.classList.add('is-return-game-guided');
+    showPlayersGuide('경기로 돌아가요!', '강화가 끝났습니다. 하단의 경기 탭을 눌러 전투 화면으로 돌아가세요.');
+  } else if (step === 'switchToAttack') {
+    attackScreen?.classList.add('is-mode-switch-guided');
+    if ($('#attackTutorialBubbleTitle')) $('#attackTutorialBubbleTitle').textContent = '모드를 전환해 보세요!';
+    if ($('#attackTutorialBubbleText')) {
+      $('#attackTutorialBubbleText').textContent =
+        '상단의 수비 모드 표시를 눌러 공격 모드로 전환한 뒤 Stage 2에 다시 도전하세요.';
+    }
+    attackBubble?.classList.remove('is-hidden');
+    $('#attackScreen [data-mode-switch]')?.classList.add('is-tutorial-target');
+  } else if (step === 'recruitFirstBaseman') {
+    playersScreen?.classList.add('is-recruit-guided');
+    showPlayersGuide(
+      '1루수를 영입하세요!',
+      '미해금 선수 중 맨 위에 있는 1루수를 영입해 시너지 조합을 준비해 보세요.'
+    );
+    $('[data-recruit-position="first"]')?.classList.add('is-tutorial-target');
+  } else if (step === 'openSynergyTab') {
+    playersScreen?.classList.add('is-synergy-tab-guided');
+    showPlayersGuide('시너지를 확인하세요!', '상단의 시너지 탭을 눌러 새로 영입한 선수와의 조합을 확인해 보세요.');
+    $('#synergyTab')?.classList.add('is-tutorial-target');
+  }
 }
 
 function showScreen(screenName) {
@@ -485,6 +574,8 @@ function showScreen(screenName) {
   if (screenName === 'settings') {
     renderSettingsScreen();
   }
+
+  renderTutorialGuidance();
 }
 
 function handleGameStart() {
@@ -516,8 +607,7 @@ function renderCommonStatus() {
 }
 
 function isShopUnlocked() {
-  return gameState.tutorialFlags.defenseSupportGranted &&
-    !gameState.tutorialFlags.playerTabGuidanceActive;
+  return gameState.tutorialFlags.tutorialComplete;
 }
 
 function renderNavigationLocks() {
@@ -853,9 +943,23 @@ function renderPlayersScreen() {
     lockedPositions.map(createLockedPlayerCard).join('');
 
   renderCommonStatus();
+  renderTutorialGuidance();
 }
 
 function selectPlayersSection(sectionName) {
+  const tutorialStep = gameState.tutorialFlags.tutorialStep;
+  if (tutorialStep === 'openSynergyTab' && sectionName !== 'synergy') {
+    showToast('지금은 시너지 탭을 선택해 주세요.');
+    return;
+  }
+  if (
+    ['upgradeBatter', 'upgradePitcher', 'returnToGame', 'recruitFirstBaseman'].includes(tutorialStep) &&
+    sectionName !== 'management'
+  ) {
+    showToast('튜토리얼 진행 중에는 선수 관리 탭을 이용해 주세요.');
+    return;
+  }
+
   const isSynergy = sectionName === 'synergy';
   const managementTab = $('#playerManagementTab');
   const synergyTab = $('#synergyTab');
@@ -867,6 +971,11 @@ function selectPlayersSection(sectionName) {
   $('#playerManagementPanel')?.classList.toggle('is-hidden', isSynergy);
   $('#synergyPanel')?.classList.toggle('is-hidden', !isSynergy);
   $('#playersScreen .players-scroll-area')?.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (tutorialStep === 'openSynergyTab' && isSynergy) {
+    setTutorialStep('synergyPreview');
+    showToast('시너지 화면을 열었습니다. 다음 단계에서 효과를 살펴볼게요!');
+  }
 }
 
 function getPositionProfileImage(position) {
@@ -919,6 +1028,14 @@ function getPlayerActionData(target) {
 }
 
 function openPlayerActionModal(target) {
+  if (
+    ['upgradeBatter', 'upgradePitcher', 'returnToGame', 'recruitFirstBaseman', 'openSynergyTab']
+      .includes(gameState.tutorialFlags.tutorialStep)
+  ) {
+    showToast('튜토리얼이 안내하는 버튼을 선택해 주세요.');
+    return;
+  }
+
   const data = getPlayerActionData(target);
   if (!data) return;
 
@@ -1033,6 +1150,20 @@ function confirmRepresentativeChange() {
 }
 
 function upgradePlayer(target) {
+  const tutorialStep = gameState.tutorialFlags.tutorialStep;
+  if (tutorialStep === 'upgradeBatter' && target !== 'batter') {
+    showToast('지금은 대표 타자만 강화할 수 있습니다.');
+    return;
+  }
+  if (tutorialStep === 'upgradePitcher' && target !== 'pitcher') {
+    showToast('지금은 대표 투수만 강화할 수 있습니다.');
+    return;
+  }
+  if (['returnToGame', 'recruitFirstBaseman', 'openSynergyTab'].includes(tutorialStep)) {
+    showToast('튜토리얼이 안내하는 버튼을 선택해 주세요.');
+    return;
+  }
+
   const player = gameState.representativePlayer;
   const recruitedPlayer = gameState.fieldPlayers[target];
   const currentLevel =
@@ -1044,7 +1175,11 @@ function upgradePlayer(target) {
 
   if (!currentLevel) return;
 
-  const cost = getLevelUpCost(currentLevel);
+  const cost =
+    (tutorialStep === 'upgradeBatter' && target === 'batter') ||
+    (tutorialStep === 'upgradePitcher' && target === 'pitcher')
+      ? 50
+      : getLevelUpCost(currentLevel);
 
   if (gameState.gold < cost) {
     showToast(`골드가 부족합니다. 레벨업에는 ${formatGold(cost)}가 필요합니다.`);
@@ -1065,7 +1200,16 @@ function upgradePlayer(target) {
 
   saveGameState();
   renderPlayersScreen();
-  showToast('레벨업이 완료되었습니다!');
+
+  if (tutorialStep === 'upgradeBatter' && target === 'batter') {
+    setTutorialStep('upgradePitcher');
+    showToast('공격력이 올랐습니다! 이제 대표 투수를 강화하세요.');
+  } else if (tutorialStep === 'upgradePitcher' && target === 'pitcher') {
+    setTutorialStep('returnToGame');
+    showToast('Hit 확률이 올랐습니다! 경기로 돌아가세요.');
+  } else {
+    showToast('레벨업이 완료되었습니다!');
+  }
 }
 
 function hideRecruitModals() {
@@ -1074,6 +1218,14 @@ function hideRecruitModals() {
 }
 
 function openRecruitConfirmation(position) {
+  if (
+    gameState.tutorialFlags.tutorialStep === 'recruitFirstBaseman' &&
+    position !== 'first'
+  ) {
+    showToast('지금은 1루수만 영입할 수 있습니다.');
+    return;
+  }
+
   if (!POSITION_NAMES[position] || gameState.fieldPlayers[position]?.unlocked) {
     return;
   }
@@ -1165,7 +1317,16 @@ function completePlayerRecruitment() {
   selectedRecruitPosition = '';
   hideRecruitModals();
   renderPlayersScreen();
-  showToast(`${POSITION_NAMES[position]} 영입이 완료되었습니다!`);
+  if (
+    gameState.tutorialFlags.tutorialStep === 'recruitFirstBaseman' &&
+    position === 'first'
+  ) {
+    gameState.tutorialFlags.firstBasemanRecruitedForSynergy = true;
+    setTutorialStep('openSynergyTab');
+    showToast('1루수 영입 완료! 이제 시너지 탭을 확인하세요.');
+  } else {
+    showToast(`${POSITION_NAMES[position]} 영입이 완료되었습니다!`);
+  }
 }
 
 function renderDefenseScreen() {
@@ -1600,6 +1761,8 @@ function hideAllModals() {
   hideDefenseSupportModal();
   hidePlayerActionModals();
   $('#resetConfirmModal')?.classList.add('is-hidden');
+  $('#modeSwitchModal')?.classList.add('is-hidden');
+  $('#synergyIntroModal')?.classList.add('is-hidden');
 }
 
 function showStageClearModal() {
@@ -1607,8 +1770,17 @@ function showStageClearModal() {
   setBatterFrame(0);
   setMonsterImage('hit');
 
-  gameState.tutorialFlags.stage1Cleared = true;
+  const config = getAttackConfigForStage(gameState.currentStage);
+  if (gameState.currentStage === 1) gameState.tutorialFlags.stage1Cleared = true;
+  if (gameState.currentStage === 2) gameState.tutorialFlags.stage2Cleared = true;
   saveGameState();
+
+  if ($('#stageClearTitle')) {
+    $('#stageClearTitle').textContent = `${gameState.currentStage}스테이지 클리어!`;
+  }
+  if ($('#stageClearMonsterName')) {
+    $('#stageClearMonsterName').textContent = `${config.monsterName} Lv . ${config.monsterLevel}`;
+  }
 
   $('#stageClearModal')?.classList.remove('is-hidden');
 }
@@ -1639,13 +1811,85 @@ function switchToDefenseMode() {
 
 function confirmStageClear() {
   hideStageClearModal();
-  gameState.currentStage = 2;
-  gameState.currentMode = 'attack';
+  if (gameState.currentStage === 1) {
+    gameState.currentStage = 2;
+    gameState.currentMode = 'attack';
+    saveGameState();
+    renderCommonStatus();
+    startAttackTutorial();
+    return;
+  }
+
+  if (gameState.currentStage === 2) {
+    gameState.currentStage = 3;
+    gameState.currentMode = 'attack';
+    gameState.tutorialFlags.tutorialStep = 'synergyIntro';
+    saveGameState();
+    attackState = createAttackState();
+    showScreen('attack');
+    renderAttackScreen();
+    $('#synergyIntroModal')?.classList.remove('is-hidden');
+    return;
+  }
+
+  gameState.currentStage += 1;
+  saveGameState();
+  startAttackTutorial();
+}
+
+function openModeSwitchConfirmation() {
+  const step = gameState.tutorialFlags.tutorialStep;
+  if (!gameState.tutorialFlags.tutorialComplete && step !== 'switchToAttack') {
+    showToast('아직은 튜토리얼 안내에 따라 모드를 전환할 수 있습니다.');
+    return;
+  }
+
+  const targetMode = gameState.currentMode === 'defense' ? 'attack' : 'defense';
+  const targetName = targetMode === 'attack' ? '공격' : '수비';
+  const title = $('#modeSwitchTitle');
+  const description = $('#modeSwitchDescription');
+  const modal = $('#modeSwitchModal');
+
+  if (title) title.textContent = `${targetName} 모드로 전환`;
+  if (description) description.textContent = `${targetName} 모드로 전환할까요?`;
+  if (modal) {
+    modal.dataset.targetMode = targetMode;
+    modal.classList.remove('is-hidden');
+  }
+}
+
+function confirmModeSwitch() {
+  const modal = $('#modeSwitchModal');
+  const targetMode = modal?.dataset.targetMode;
+  if (!['attack', 'defense'].includes(targetMode)) return;
+
+  modal.classList.add('is-hidden');
+  gameState.currentMode = targetMode;
+
+  if (gameState.tutorialFlags.tutorialStep === 'switchToAttack' && targetMode === 'attack') {
+    gameState.tutorialFlags.tutorialStep = 'stage2Retry';
+    saveGameState();
+    startAttackTutorial();
+    return;
+  }
+
+  saveGameState();
+  if (targetMode === 'attack') startAttackTutorial();
+  else startDefenseMode();
+}
+
+function beginSynergyPlayerGuidance() {
+  $('#synergyIntroModal')?.classList.add('is-hidden');
+  if (!gameState.tutorialFlags.synergySupportGranted) {
+    gameState.gold += 100;
+    gameState.tutorialFlags.synergySupportGranted = true;
+  }
+  gameState.tutorialFlags.tutorialStep = 'openPlayersForSynergy';
+  gameState.tutorialFlags.playerTabGuidanceActive = true;
   saveGameState();
   renderCommonStatus();
-  
-  // Stage 2로 시작
-  startAttackTutorial();
+  setPlayerTabGuidance(true);
+  showToast('지원금 100G 지급! 선수 탭을 선택하세요.');
 }
 
 function initStartScreen() {
@@ -1665,9 +1909,53 @@ function handleBottomNavigation(button) {
   const target = button.dataset.target;
   const currentScreenId = button.closest('section')?.id;
 
+  if (target === 'settings') {
+    if (currentScreenId === 'settingsScreen') {
+      showToast('현재 설정 화면입니다.');
+      return;
+    }
+
+    settingsReturnScreen =
+      currentScreenId === 'playersScreen'
+        ? 'players'
+        : currentScreenId === 'representativeScreen'
+          ? 'representative'
+          : currentScreenId === 'attackScreen'
+            ? 'attack'
+            : 'start';
+    showScreen('settings');
+    return;
+  }
+
+  if (currentScreenId === 'settingsScreen') {
+    const returnTarget =
+      settingsReturnScreen === 'players'
+        ? 'players'
+        : settingsReturnScreen === 'representative'
+          ? 'representative'
+          : settingsReturnScreen === 'start'
+            ? 'start'
+            : 'attack';
+
+    if (
+      (target === 'players' && returnTarget === 'players') ||
+      (target === 'game' && ['attack', 'representative', 'start'].includes(returnTarget))
+    ) {
+      showScreen(returnTarget);
+      return;
+    }
+
+    showToast('설정을 열기 전 화면으로 돌아가 주세요.');
+    return;
+  }
+
   if (gameState.tutorialFlags.playerTabGuidanceActive) {
     if (target === 'players') {
       gameState.tutorialFlags.playerTabGuidanceActive = false;
+      gameState.tutorialFlags.tutorialStep =
+        gameState.tutorialFlags.tutorialStep === 'openPlayersForSynergy'
+          ? 'recruitFirstBaseman'
+          : 'upgradeBatter';
       saveGameState();
       setPlayerTabGuidance(false);
       showScreen('players');
@@ -1678,6 +1966,22 @@ function handleBottomNavigation(button) {
     return;
   }
 
+  const tutorialStep = gameState.tutorialFlags.tutorialStep;
+
+  if (tutorialStep === 'returnToGame') {
+    if (target !== 'game') {
+      showToast('지금은 경기 탭으로 돌아가 주세요.');
+      return;
+    }
+    gameState.currentMode = 'defense';
+    setTutorialStep('switchToAttack');
+    stopAttackTutorial();
+    stopDefenseMode();
+    showScreen('attack');
+    renderDefenseScreen();
+    return;
+  }
+
   if (target === 'shop' && !isShopUnlocked()) {
     showToast('상점은 튜토리얼 완료 후 이용할 수 있습니다.');
     return;
@@ -1685,6 +1989,13 @@ function handleBottomNavigation(button) {
 
   // Keep every tutorial step on its intended path, including setup screens and result modals.
   if (isTutorialInProgress()) {
+    if (target === 'players' && tutorialStep === 'openPlayersForSynergy') {
+      gameState.tutorialFlags.playerTabGuidanceActive = false;
+      setPlayerTabGuidance(false);
+      setTutorialStep('recruitFirstBaseman');
+      showScreen('players');
+      return;
+    }
     showToast('튜토리얼 진행 중에는 하단 메뉴를 이용할 수 없습니다.');
     return;
   }
@@ -1718,16 +2029,6 @@ function handleBottomNavigation(button) {
     return;
   }
 
-  if (target === 'settings') {
-    if (currentScreenId === 'settingsScreen') {
-      showToast('현재 설정 화면입니다.');
-      return;
-    }
-
-    showScreen('settings');
-    return;
-  }
-
   if (target === 'dungeon') {
     showToast('던전은 아직 잠겨 있습니다.');
     return;
@@ -1745,10 +2046,6 @@ function handleBottomNavigation(button) {
 }
 
 function initRepresentativeScreen() {
-  gameState.currentStage = 1;
-  gameState.currentMode = 'attack';
-  saveGameState();
-
   $$('.position-button').forEach((button) => {
     button.addEventListener('click', () => {
       setRepresentativePosition(button.dataset.position);
@@ -1772,6 +2069,12 @@ function initAttackScreen() {
   $('#stageClearConfirmButton')?.addEventListener('click', confirmStageClear);
   $('#stageFailDefenseButton')?.addEventListener('click', switchToDefenseMode);
   $('#defenseSupportConfirmButton')?.addEventListener('click', beginPlayerTabGuidance);
+  $('#attackScreen [data-mode-switch]')?.addEventListener('click', openModeSwitchConfirmation);
+  $('#confirmModeSwitchButton')?.addEventListener('click', confirmModeSwitch);
+  $('#cancelModeSwitchButton')?.addEventListener('click', () => {
+    $('#modeSwitchModal')?.classList.add('is-hidden');
+  });
+  $('#synergyIntroConfirmButton')?.addEventListener('click', beginSynergyPlayerGuidance);
   $$('.defense-rule-item').forEach((button) => {
     button.addEventListener('click', () => {
       showDefenseRuleTooltip(button);
