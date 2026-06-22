@@ -107,6 +107,7 @@ const DEFAULT_GAME_STATE = {
     volume: 70,
     muted: false,
   },
+  claimedStageRewards: {},
   tutorialFlags: {
     representativeBatterSet: false,
     representativePitcherSet: false,
@@ -120,6 +121,7 @@ const DEFAULT_GAME_STATE = {
     synergySupportGranted: false,
     firstBasemanRecruitedForSynergy: false,
     tutorialComplete: false,
+    tutorialCompletionRewardGranted: false,
   },
 };
 
@@ -160,6 +162,91 @@ const STAGE_CONFIGS = {
     frame3DelayMs: 1040,
     resetDelayMs: 1450,
   },
+  4: {
+    monsterName: 'A 몬스터',
+    monsterLevel: 4,
+    maxHp: 450,
+    timeLimit: 30,
+    attackDamage: 10,
+    criticalChance: 0.05,
+    attackCycleMs: 2000,
+    frame2DelayMs: 520,
+    frame3DelayMs: 1040,
+    resetDelayMs: 1450,
+  },
+  5: {
+    monsterName: 'A 몬스터',
+    monsterLevel: 5,
+    maxHp: 600,
+    timeLimit: 30,
+    attackDamage: 10,
+    criticalChance: 0.05,
+    attackCycleMs: 2000,
+    frame2DelayMs: 520,
+    frame3DelayMs: 1040,
+    resetDelayMs: 1450,
+  },
+  6: {
+    monsterName: 'A 몬스터',
+    monsterLevel: 6,
+    maxHp: 780,
+    timeLimit: 30,
+    attackDamage: 10,
+    criticalChance: 0.05,
+    attackCycleMs: 2000,
+    frame2DelayMs: 520,
+    frame3DelayMs: 1040,
+    resetDelayMs: 1450,
+  },
+  7: {
+    monsterName: 'A 몬스터',
+    monsterLevel: 7,
+    maxHp: 960,
+    timeLimit: 30,
+    attackDamage: 10,
+    criticalChance: 0.05,
+    attackCycleMs: 2000,
+    frame2DelayMs: 520,
+    frame3DelayMs: 1040,
+    resetDelayMs: 1450,
+  },
+  8: {
+    monsterName: 'A 몬스터',
+    monsterLevel: 8,
+    maxHp: 1200,
+    timeLimit: 30,
+    attackDamage: 10,
+    criticalChance: 0.05,
+    attackCycleMs: 2000,
+    frame2DelayMs: 520,
+    frame3DelayMs: 1040,
+    resetDelayMs: 1450,
+  },
+  9: {
+    monsterName: 'A 몬스터',
+    monsterLevel: 9,
+    maxHp: 1500,
+    timeLimit: 30,
+    attackDamage: 10,
+    criticalChance: 0.05,
+    attackCycleMs: 2000,
+    frame2DelayMs: 520,
+    frame3DelayMs: 1040,
+    resetDelayMs: 1450,
+  },
+  10: {
+    monsterName: 'A 몬스터 BOSS',
+    monsterLevel: 10,
+    isBoss: true,
+    maxHp: 2400,
+    timeLimit: 30,
+    attackDamage: 10,
+    criticalChance: 0.05,
+    attackCycleMs: 2000,
+    frame2DelayMs: 520,
+    frame3DelayMs: 1040,
+    resetDelayMs: 1450,
+  },
 };
 
 // 하위호환성을 위한 참조
@@ -191,6 +278,7 @@ const MONSTER_IMAGES = {
   proud: 'assets/monster-proud.png',
   hit: 'assets/monster-hit.png',
   crying: 'assets/monster-crying.png',
+  boss: 'assets/monster-boss.png',
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -261,6 +349,10 @@ function loadGameState() {
         ...defaultState.settings,
         ...(parsedData.settings ?? {}),
       },
+      claimedStageRewards: {
+        ...defaultState.claimedStageRewards,
+        ...(parsedData.claimedStageRewards ?? {}),
+      },
     };
   } catch (error) {
     console.warn('저장 데이터를 불러오지 못했습니다.', error);
@@ -291,12 +383,23 @@ function getModeName(mode) {
 
 function getMonsterStageScale(stage) {
   const normalizedStage = Math.max(1, Math.floor(normalizeNumber(stage, 1)));
-  return Math.min(1 + (normalizedStage - 1) * 0.06, 1.45);
+  if (normalizedStage === 10) return 1.52;
+  return Math.min(1 + (normalizedStage - 1) * 0.055, 1.44);
 }
 
 function getAttackConfigForStage(stage) {
   const normalizedStage = Math.max(1, Math.floor(normalizeNumber(stage, 1)));
   return STAGE_CONFIGS[normalizedStage] ?? STAGE_CONFIGS[1];
+}
+
+function getStageMonsterDisplayName(config) {
+  return config.isBoss
+    ? config.monsterName
+    : `${config.monsterName} Lv . ${config.monsterLevel}`;
+}
+
+function getStageClearReward(stage) {
+  return stage >= 3 && stage <= 9 ? (stage - 2) * 500 : 0;
 }
 
 function getDefenseRewards() {
@@ -660,6 +763,14 @@ function showScreen(screenName) {
 }
 
 function handleGameStart() {
+  if (gameState.tutorialFlags.tutorialComplete) {
+    gameState.currentMode = 'attack';
+    saveGameState();
+    startAttackTutorial();
+    showToast(`Stage ${gameState.currentStage} 공격 모드를 이어서 시작합니다.`);
+    return;
+  }
+
   showScreen('representative');
 }
 
@@ -1124,6 +1235,10 @@ function selectPlayersSection(sectionName) {
 }
 
 function completeBasicTutorial() {
+  if (!gameState.tutorialFlags.tutorialCompletionRewardGranted) {
+    gameState.gold += 500;
+    gameState.tutorialFlags.tutorialCompletionRewardGranted = true;
+  }
   gameState.tutorialFlags.tutorialComplete = true;
   gameState.tutorialFlags.tutorialStep = 'completed';
   gameState.tutorialFlags.playerTabGuidanceActive = false;
@@ -1133,7 +1248,8 @@ function completeBasicTutorial() {
   setPlayerTabGuidance(false);
   renderNavigationLocks();
   renderTutorialGuidance();
-  showToast('튜토리얼 완료! 기본 메뉴와 모드 전환이 해금되었습니다.');
+  renderCommonStatus();
+  showToast('튜토리얼 완료 보상 500G를 받았습니다!');
 }
 
 function getPositionProfileImage(position) {
@@ -1567,7 +1683,9 @@ function renderAttackScreen() {
 
   if (monsterNameDisplay) {
     monsterNameDisplay.classList.remove('is-hidden');
-    monsterNameDisplay.innerHTML = `${config.monsterName} <span class="monster-level">Lv . ${config.monsterLevel}</span>`;
+    monsterNameDisplay.innerHTML = config.isBoss
+      ? `<span class="boss-name">${config.monsterName}</span>`
+      : `${config.monsterName} <span class="monster-level">Lv . ${config.monsterLevel}</span>`;
   }
 
   const battlePlayerPosition = $('#battlePlayerPosition');
@@ -1626,7 +1744,11 @@ function setMonsterImage(state) {
   const battleMonster = $('#battleMonster');
   if (!battleMonster) return;
 
-  battleMonster.src = MONSTER_IMAGES[state] ?? MONSTER_IMAGES.normal;
+  const config = getAttackConfigForStage(gameState.currentStage);
+  battleMonster.src = config.isBoss
+    ? MONSTER_IMAGES.boss
+    : MONSTER_IMAGES[state] ?? MONSTER_IMAGES.normal;
+  battleMonster.classList.toggle('is-boss', Boolean(config.isBoss));
   battleMonster.classList.toggle('is-hit', state === 'hit');
   battleMonster.classList.toggle('is-crying', state === 'crying');
 }
@@ -1946,7 +2068,23 @@ function showStageClearModal() {
     $('#stageClearTitle').textContent = `${gameState.currentStage}스테이지 클리어!`;
   }
   if ($('#stageClearMonsterName')) {
-    $('#stageClearMonsterName').textContent = `${config.monsterName} Lv . ${config.monsterLevel}`;
+    $('#stageClearMonsterName').textContent = getStageMonsterDisplayName(config);
+  }
+
+  const reward = getStageClearReward(gameState.currentStage);
+  const rewardElement = $('#stageClearReward');
+  if (rewardElement) {
+    rewardElement.classList.toggle('is-hidden', reward <= 0);
+    rewardElement.innerHTML = reward > 0
+      ? `클리어 보상 <strong>${formatGold(reward)}</strong>`
+      : '';
+  }
+
+  if (reward > 0 && !gameState.claimedStageRewards[gameState.currentStage]) {
+    gameState.gold += reward;
+    gameState.claimedStageRewards[gameState.currentStage] = true;
+    saveGameState();
+    renderCommonStatus();
   }
 
   $('#stageClearModal')?.classList.remove('is-hidden');
@@ -1960,6 +2098,13 @@ function showStageFailModal() {
   const stageFailModal = $('#stageFailModal');
   if (!stageFailModal) return;
 
+  const config = getAttackConfigForStage(gameState.currentStage);
+  const description = $('#stageFailDescription');
+  if (description) {
+    description.innerHTML =
+      `${getStageMonsterDisplayName(config)}를 제한 시간 내에 처치하지 못했어요.<br />` +
+      '수비 모드에서 골드를 벌어 선수를 강화해 보세요!';
+  }
   stageFailModal.classList.remove('is-hidden');
 }
 
@@ -1969,6 +2114,12 @@ function hideStageFailModal() {
 
 function switchToDefenseMode() {
   hideStageFailModal();
+
+  if (gameState.tutorialFlags.tutorialComplete) {
+    startDefenseMode();
+    return;
+  }
+
   stopAttackTutorial();
   stopDefenseMode();
   window.clearTimeout(defenseSupportModalTimerId);
@@ -2012,9 +2163,15 @@ function confirmStageClear() {
     return;
   }
 
-  gameState.currentStage += 1;
-  saveGameState();
-  startAttackTutorial();
+  if (gameState.currentStage < 10) {
+    gameState.currentStage += 1;
+    saveGameState();
+    startAttackTutorial();
+    return;
+  }
+
+  hideStageClearModal();
+  showToast('A 몬스터 BOSS를 물리쳤습니다!');
 }
 
 function openModeSwitchConfirmation() {

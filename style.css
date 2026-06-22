@@ -1956,9 +1956,42 @@ button {
   text-shadow: var(--shadow-text);
 }
 
+.tutorial-complete-reward {
+  display: inline-flex;
+  gap: 7px;
+  margin-top: 15px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  color: #d9e8f5;
+  background: rgba(0, 18, 40, 0.68);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.tutorial-complete-reward b {
+  color: #ffdc65;
+  font-size: 14px;
+}
+
 .tutorial-complete-card .stage-clear-button {
   width: 100%;
   margin-top: 22px;
+}
+
+.stage-clear-reward {
+  display: inline-flex;
+  gap: 6px;
+  margin-top: 13px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: #d8e8f6;
+  background: rgba(0, 18, 40, 0.66);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.stage-clear-reward strong {
+  color: #ffdc65;
 }
 
 .modal-close-button {
@@ -3076,6 +3109,17 @@ button {
 
 .battle-monster.is-crying {
   transform: scale(calc(var(--monster-stage-scale, 1) * 1.28));
+}
+
+.battle-monster.is-boss {
+  filter:
+    drop-shadow(0 13px 10px rgba(0, 0, 0, 0.44))
+    drop-shadow(0 0 15px rgba(255, 190, 47, 0.34));
+}
+
+.boss-name {
+  color: #ffdc65;
+  text-shadow: 0 2px 0 #603900, 0 0 12px rgba(255, 208, 62, 0.55);
 }
 
 .damage-popup {
