@@ -481,6 +481,14 @@ function getFielderCatchChance() {
   return Math.min(0.1 + getSynergyEffectValue('infield') / 100, 0.6);
 }
 
+function getAttackCriticalChance(stage = gameState.currentStage) {
+  const config = getAttackConfigForStage(stage);
+  return Math.min(
+    config.criticalChance + getSynergyEffectValue('outfield') / 100,
+    0.5
+  );
+}
+
 function getPositionRosterState(position) {
   const representative = gameState.representativePlayer;
 
@@ -528,8 +536,7 @@ function getSynergyEffectValue(teamKey) {
   if (teamKey === 'outfield') {
     if (state.step <= 0) return 0;
     if (state.step === 1) return 1;
-    if (state.step <= 3) return 3;
-    return (state.step - 2) * 3;
+    return (state.step - 1) * 3;
   }
 
   return state.step * state.effectPerStage;
@@ -2010,11 +2017,7 @@ function applyTutorialDamage() {
     return;
   }
 
-  const config = getAttackConfigForStage(gameState.currentStage);
-  const criticalChance = Math.min(
-    config.criticalChance + getSynergyEffectValue('outfield') / 100,
-    0.75
-  );
+  const criticalChance = getAttackCriticalChance();
   const isCritical = Math.random() < criticalChance;
   const baseDamage = gameState.representativePlayer.attack;
   const damage = isCritical ? baseDamage * 2 : baseDamage;
