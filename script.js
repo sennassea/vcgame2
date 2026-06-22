@@ -44,7 +44,7 @@ const SYNERGY_CONFIG = {
     subtitle: 'BATTERY TEAM',
     positions: ['pitcher', 'catcher'],
     effectName: '골드 획득량 증가',
-    effectPerStage: 10,
+    effectPerStage: 1,
     effectUnit: '%',
     className: 'battery',
   },
@@ -53,7 +53,7 @@ const SYNERGY_CONFIG = {
     subtitle: 'INFIELD TEAM',
     positions: ['first', 'second', 'third', 'shortstop'],
     effectName: 'Catch 아웃 확률 증가',
-    effectPerStage: 5,
+    effectPerStage: 1,
     effectUnit: '%p',
     className: 'infield',
   },
@@ -62,7 +62,7 @@ const SYNERGY_CONFIG = {
     subtitle: 'OUTFIELD TEAM',
     positions: ['left', 'center', 'right'],
     effectName: '치명타 확률 증가',
-    effectPerStage: 5,
+    effectPerStage: 1,
     effectUnit: '%p',
     className: 'outfield',
   },
@@ -130,7 +130,7 @@ const STAGE_CONFIGS = {
     maxHp: 50,
     timeLimit: 30,
     attackDamage: 10,
-    criticalChance: 0,
+    criticalChance: 0.05,
     attackCycleMs: 2000,
     frame2DelayMs: 520,
     frame3DelayMs: 1040,
@@ -139,10 +139,10 @@ const STAGE_CONFIGS = {
   2: {
     monsterName: 'A 몬스터',
     monsterLevel: 2,
-    maxHp: 160,
+    maxHp: 200,
     timeLimit: 30,
     attackDamage: 10,
-    criticalChance: 0,
+    criticalChance: 0.05,
     attackCycleMs: 2000,
     frame2DelayMs: 520,
     frame3DelayMs: 1040,
@@ -154,7 +154,7 @@ const STAGE_CONFIGS = {
     maxHp: 300,
     timeLimit: 30,
     attackDamage: 10,
-    criticalChance: 0,
+    criticalChance: 0.05,
     attackCycleMs: 2000,
     frame2DelayMs: 520,
     frame3DelayMs: 1040,
@@ -349,8 +349,8 @@ function getSynergyState(teamKey) {
   }));
   const active = members.every((member) => member.owned);
   const minimumLevel = active ? Math.min(...members.map((member) => member.level)) : 0;
-  const step = active ? 1 + Math.floor(minimumLevel / 10) : 0;
-  const nextRequiredLevel = active ? step * 10 : 1;
+  const step = active ? Math.floor(minimumLevel / 10) : 0;
+  const nextRequiredLevel = active ? (step + 1) * 10 : 1;
 
   return { ...config, members, active, minimumLevel, step, nextRequiredLevel };
 }
@@ -855,6 +855,9 @@ function completeRepresentativeSetup() {
 
     gameState.representativePlayer.pitcherName = name;
     gameState.tutorialFlags.representativePitcherSet = true;
+    if (gameState.tutorialFlags.tutorialStep === 'setupPitcher') {
+      gameState.tutorialFlags.tutorialStep = 'defenseTraining';
+    }
     saveGameState();
     startDefenseMode();
     return;
@@ -1670,6 +1673,7 @@ function addDefenseGold(amount) {
 }
 
 function completeDefensePitchTutorialStep() {
+  if (gameState.tutorialFlags.tutorialStep !== 'defenseTraining') return;
   if (gameState.tutorialFlags.defenseSupportGranted) return;
 
   gameState.tutorialFlags.firstDefensePitchCount = Math.min(
@@ -1683,6 +1687,7 @@ function completeDefensePitchTutorialStep() {
   }
 
   gameState.tutorialFlags.defenseSupportGranted = true;
+  gameState.tutorialFlags.tutorialStep = 'defenseSupport';
   gameState.gold += 100;
   saveGameState();
   renderCommonStatus();
@@ -1948,9 +1953,22 @@ function hideStageFailModal() {
 
 function switchToDefenseMode() {
   hideStageFailModal();
+  stopAttackTutorial();
+  stopDefenseMode();
+  window.clearTimeout(defenseSupportModalTimerId);
+  hideDefenseSupportModal();
+  setDefenseSupportPending(false);
+  setPlayerTabGuidance(false);
+
   gameState.currentMode = 'defense';
+  gameState.tutorialFlags.representativePitcherSet = false;
+  gameState.tutorialFlags.firstDefenseHitDone = false;
+  gameState.tutorialFlags.firstDefensePitchCount = 0;
+  gameState.tutorialFlags.defenseSupportGranted = false;
+  gameState.tutorialFlags.playerTabGuidanceActive = false;
+  gameState.tutorialFlags.tutorialStep = 'setupPitcher';
   saveGameState();
-  renderRepresentativeScreen();
+  clearRepresentativeFormDraft();
   showScreen('representative');
   showToast('대표 투수 설정 화면으로 이동합니다.');
 }

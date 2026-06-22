@@ -1503,9 +1503,9 @@ button {
   height: 72px;
   margin: 0 3px 3px;
   overflow: hidden;
-  border: 1px solid rgba(210, 225, 240, 0.7);
+  border: 1px solid rgba(103, 185, 231, 0.28);
   border-radius: 9px;
-  background: #fff;
+  background: radial-gradient(circle at 50% 45%, rgba(71, 174, 230, 0.18), rgba(0, 14, 32, 0.08) 68%, transparent 72%);
 }
 
 .synergy-member-grid--2 .synergy-member-image {
