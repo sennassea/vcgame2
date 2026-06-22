@@ -4,9 +4,7 @@ const PAGE_CONFIG = {
   // 다음 화면을 별도 파일로 만들면 null 대신 실제 파일명을 넣으면 됩니다.
   // 예: stage2Page: 'stage2.html', settingsPage: 'settings.html'
   stage2Page: null,
-  settingsPage: null,
-  synergyPage: null,
-  logPage: null,
+  shopPage: null,
 };
 
 const POSITION_NAMES = {
@@ -62,6 +60,10 @@ const DEFAULT_GAME_STATE = {
     left: { unlocked: false, name: '', level: 1, attack: 10 },
     center: { unlocked: false, name: '', level: 1, attack: 10 },
     right: { unlocked: false, name: '', level: 1, attack: 10 },
+  },
+  settings: {
+    volume: 70,
+    muted: false,
   },
   tutorialFlags: {
     representativeBatterSet: false,
@@ -144,6 +146,7 @@ let defenseLoopId = null;
 let defenseTimeoutIds = [];
 let defenseSupportModalTimerId = null;
 let selectedRecruitPosition = '';
+let selectedPlayerTarget = '';
 let gameState = loadGameState();
 let attackState = createAttackState();
 let defenseState = { isRunning: false };
@@ -193,6 +196,10 @@ function loadGameState() {
       tutorialFlags: {
         ...defaultState.tutorialFlags,
         ...(parsedData.tutorialFlags ?? {}),
+      },
+      settings: {
+        ...defaultState.settings,
+        ...(parsedData.settings ?? {}),
       },
     };
   } catch (error) {
@@ -438,11 +445,14 @@ function showScreen(screenName) {
   const representativeScreen = $('#representativeScreen');
   const playersScreen = $('#playersScreen');
   const attackScreen = $('#attackScreen');
+  const settingsScreen = $('#settingsScreen');
 
   startScreen?.classList.toggle('is-hidden', screenName !== 'start');
   representativeScreen?.classList.toggle('is-hidden', screenName !== 'representative');
   playersScreen?.classList.toggle('is-hidden', screenName !== 'players');
   attackScreen?.classList.toggle('is-hidden', screenName !== 'attack');
+  settingsScreen?.classList.toggle('is-hidden', screenName !== 'settings');
+  if (screenName !== 'start') hideQuickSettings();
 
   if (screenName !== 'attack') {
     stopAttackTutorial();
@@ -454,9 +464,11 @@ function showScreen(screenName) {
 
   if (screenName !== 'players') {
     hideRecruitModals();
+    hidePlayerActionModals();
   }
 
   if (screenName === 'representative') {
+    clearRepresentativeFormDraft();
     renderRepresentativeScreen();
     representativeScreen?.querySelector('.representative-scroll-area')?.scrollTo({ top: 0 });
   }
@@ -468,6 +480,10 @@ function showScreen(screenName) {
   if (screenName === 'players') {
     renderPlayersScreen();
     playersScreen?.querySelector('.players-scroll-area')?.scrollTo({ top: 0 });
+  }
+
+  if (screenName === 'settings') {
+    renderSettingsScreen();
   }
 }
 
@@ -486,11 +502,34 @@ function renderCommonStatus() {
     ['playersStatusGold', formatGold(gameState.gold)],
     ['playersStatusStage', `Stage ${gameState.currentStage}`],
     ['playersStatusMode', getModeName(gameState.currentMode)],
+    ['settingsStatusGold', formatGold(gameState.gold)],
+    ['settingsStatusStage', `Stage ${gameState.currentStage}`],
+    ['settingsStatusMode', getModeName(gameState.currentMode)],
   ];
 
   statusItems.forEach(([id, value]) => {
     const element = $(`#${id}`);
     if (element) element.textContent = value;
+  });
+
+  renderNavigationLocks();
+}
+
+function isShopUnlocked() {
+  return gameState.tutorialFlags.defenseSupportGranted &&
+    !gameState.tutorialFlags.playerTabGuidanceActive;
+}
+
+function renderNavigationLocks() {
+  const shopUnlocked = isShopUnlocked();
+
+  $$('.bottom-nav-button[data-target="shop"]').forEach((button) => {
+    button.classList.toggle('is-locked', !shopUnlocked);
+    button.setAttribute('aria-disabled', String(!shopUnlocked));
+    button.setAttribute(
+      'aria-label',
+      shopUnlocked ? '상점 화면으로 이동' : '상점, 튜토리얼 완료 후 해금'
+    );
   });
 }
 
@@ -580,10 +619,6 @@ function renderRepresentativeScreen() {
         : '대표 타자 이름 입력'
     );
 
-    if (gameState.currentMode === 'defense') {
-      // Do not auto-fill previous pitcher name in input; show placeholder instead
-      playerNameInput.value = '';
-    }
   }
 
   if (positionSelectArea) {
@@ -603,6 +638,11 @@ function renderRepresentativeScreen() {
   if (profileCard) {
     profileCard.classList.toggle('is-pitcher', gameState.currentMode === 'defense');
   }
+}
+
+function clearRepresentativeFormDraft() {
+  const input = $('#playerNameInput');
+  if (input) input.value = '';
 }
 
 function updateRepresentativePreview() {
@@ -695,11 +735,12 @@ function createUnlockedPlayerCard({
   level,
   statLabel,
   statValue,
+  playerTarget = upgradeTarget,
 }) {
   const levelUpCost = getLevelUpCost(level);
 
   return `
-    <article class="player-management-card is-unlocked is-${role}">
+    <article class="player-management-card is-unlocked is-${role}" data-player-card="${playerTarget}" tabindex="0" role="button" aria-label="${escapeHtml(name)} 선수 메뉴 열기">
       <div class="player-card-portrait">
         <img src="${image}" alt="${escapeHtml(position)} 프로필" draggable="false" />
         <span>${badge}</span>
@@ -772,6 +813,7 @@ function renderPlayersScreen() {
     level: player.level,
     statLabel: '공격력',
     statValue: player.attack,
+    playerTarget: 'batter',
   });
 
   const pitcherCard = createUnlockedPlayerCard({
@@ -783,6 +825,7 @@ function renderPlayersScreen() {
     level: player.pitcherLevel,
     statLabel: 'Hit 확률',
     statValue: formatPercent(getPitcherHitChance()),
+    playerTarget: 'pitcher',
   });
 
   const recruitedCards = unlockedPositions.map((position) => {
@@ -798,6 +841,7 @@ function renderPlayersScreen() {
       level: recruitedPlayer.level,
       statLabel: '공격력',
       statValue: recruitedPlayer.attack,
+      playerTarget: position,
     });
   }).join('');
 
@@ -811,12 +855,181 @@ function renderPlayersScreen() {
   renderCommonStatus();
 }
 
+function selectPlayersSection(sectionName) {
+  const isSynergy = sectionName === 'synergy';
+  const managementTab = $('#playerManagementTab');
+  const synergyTab = $('#synergyTab');
+
+  managementTab?.classList.toggle('is-active', !isSynergy);
+  managementTab?.setAttribute('aria-selected', String(!isSynergy));
+  synergyTab?.classList.toggle('is-active', isSynergy);
+  synergyTab?.setAttribute('aria-selected', String(isSynergy));
+  $('#playerManagementPanel')?.classList.toggle('is-hidden', isSynergy);
+  $('#synergyPanel')?.classList.toggle('is-hidden', !isSynergy);
+  $('#playersScreen .players-scroll-area')?.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function getPositionProfileImage(position) {
   if (position === 'catcher') return PLAYER_PROFILE_IMAGES.catcher;
   if (['first', 'second', 'third', 'shortstop'].includes(position)) {
     return PLAYER_PROFILE_IMAGES.infielder;
   }
   return PLAYER_PROFILE_IMAGES.outfielder;
+}
+
+function getPlayerActionData(target) {
+  const representative = gameState.representativePlayer;
+
+  if (target === 'batter') {
+    return {
+      target,
+      name: representative.name,
+      position: representative.position,
+      positionName: getSelectedPositionName(),
+      image: PLAYER_PROFILE_IMAGES.representative,
+      isRepresentative: true,
+      canBeRepresentative: false,
+    };
+  }
+
+  if (target === 'pitcher') {
+    return {
+      target,
+      name: representative.pitcherName,
+      position: 'pitcher',
+      positionName: '투수',
+      image: PLAYER_PROFILE_IMAGES.pitcher,
+      isRepresentative: false,
+      canBeRepresentative: false,
+    };
+  }
+
+  const player = gameState.fieldPlayers[target];
+  if (!POSITION_NAMES[target] || !player?.unlocked) return null;
+
+  return {
+    target,
+    name: player.name,
+    position: target,
+    positionName: POSITION_NAMES[target],
+    image: getPositionProfileImage(target),
+    isRepresentative: false,
+    canBeRepresentative: true,
+  };
+}
+
+function openPlayerActionModal(target) {
+  const data = getPlayerActionData(target);
+  if (!data) return;
+
+  selectedPlayerTarget = target;
+  const image = $('#playerActionImage');
+  if (image) {
+    image.src = data.image;
+    image.alt = `${data.positionName} 프로필`;
+  }
+  if ($('#playerActionPosition')) $('#playerActionPosition').textContent = data.positionName;
+  if ($('#playerActionTitle')) $('#playerActionTitle').textContent = data.name || '이름 입력';
+  $('#playerActionRepresentativeBadge')?.classList.toggle('is-hidden', !data.isRepresentative);
+  $('#openRepresentativeConfirmButton')?.classList.toggle('is-hidden', !data.canBeRepresentative);
+  $('#playerActionModal')?.classList.remove('is-hidden');
+}
+
+function hidePlayerActionModals() {
+  $('#playerActionModal')?.classList.add('is-hidden');
+  $('#renamePlayerModal')?.classList.add('is-hidden');
+  $('#representativeConfirmModal')?.classList.add('is-hidden');
+}
+
+function openRenamePlayerModal() {
+  const data = getPlayerActionData(selectedPlayerTarget);
+  if (!data) return;
+
+  const input = $('#renamePlayerInput');
+  if ($('#renamePlayerTitle')) $('#renamePlayerTitle').textContent = `${data.positionName} 이름 변경`;
+  if (input) input.value = data.name;
+  $('#playerActionModal')?.classList.add('is-hidden');
+  $('#renamePlayerModal')?.classList.remove('is-hidden');
+  window.setTimeout(() => input?.focus(), 80);
+}
+
+function confirmRenamePlayer() {
+  const input = $('#renamePlayerInput');
+  const name = input?.value.trim() ?? '';
+  const target = selectedPlayerTarget;
+
+  if (!name) {
+    showToast('변경할 이름을 입력해 주세요.');
+    input?.focus();
+    return;
+  }
+
+  if (target === 'batter') {
+    gameState.representativePlayer.name = name;
+  } else if (target === 'pitcher') {
+    gameState.representativePlayer.pitcherName = name;
+  } else if (gameState.fieldPlayers[target]?.unlocked) {
+    gameState.fieldPlayers[target].name = name;
+  } else {
+    return;
+  }
+
+  saveGameState();
+  hidePlayerActionModals();
+  renderPlayersScreen();
+  showToast('선수 이름이 변경되었습니다.');
+}
+
+function openRepresentativeConfirmation() {
+  const data = getPlayerActionData(selectedPlayerTarget);
+  if (!data?.canBeRepresentative) return;
+
+  if ($('#representativeCandidateName')) {
+    $('#representativeCandidateName').textContent = `${data.positionName} ${data.name}`;
+  }
+  $('#playerActionModal')?.classList.add('is-hidden');
+  $('#representativeConfirmModal')?.classList.remove('is-hidden');
+}
+
+function confirmRepresentativeChange() {
+  const newPosition = selectedPlayerTarget;
+  const candidate = gameState.fieldPlayers[newPosition];
+  const representative = gameState.representativePlayer;
+  const oldPosition = representative.position;
+
+  if (!candidate?.unlocked || !POSITION_NAMES[newPosition] || !POSITION_NAMES[oldPosition]) {
+    hidePlayerActionModals();
+    return;
+  }
+
+  if (gameState.gold < 1000) {
+    showToast('대표 타자 변경에는 1,000G가 필요합니다.');
+    return;
+  }
+
+  gameState.gold -= 1000;
+  gameState.fieldPlayers[oldPosition] = {
+    unlocked: true,
+    name: representative.name,
+    level: representative.level,
+    attack: representative.attack,
+  };
+  representative.position = newPosition;
+  representative.name = candidate.name;
+  representative.level = candidate.level;
+  representative.attack = candidate.attack;
+  gameState.fieldPlayers[newPosition] = {
+    unlocked: false,
+    name: '',
+    level: 1,
+    attack: 10,
+  };
+
+  saveGameState();
+  hidePlayerActionModals();
+  renderPlayersScreen();
+  renderAttackScreen();
+  showToast(`${representative.name} 선수가 대표 타자로 지정되었습니다.`);
 }
 
 function upgradePlayer(target) {
@@ -1111,6 +1324,14 @@ function showDamagePopup(damage, isCritical) {
   damagePopup.classList.add('is-visible');
 }
 
+function hideBattleResultPopup() {
+  const damagePopup = $('#damagePopup');
+  if (!damagePopup) return;
+
+  damagePopup.className = 'damage-popup';
+  damagePopup.innerHTML = '';
+}
+
 function setPitcherFrame(frameIndex) {
   const battleBatter = $('#battleBatter');
   if (!battleBatter) return;
@@ -1263,6 +1484,7 @@ function startDefenseMode() {
 
   setPitcherFrame(0);
   setMonsterImage('normal');
+  hideBattleResultPopup();
   hideAllModals();
   showScreen('attack');
   renderDefenseScreen();
@@ -1334,6 +1556,7 @@ function startAttackTutorial() {
   attackState = createAttackState();
   setBatterFrame(0);
   setMonsterImage('normal');
+  hideBattleResultPopup();
   hideAllModals();
   showScreen('attack');
   renderAttackScreen();
@@ -1375,6 +1598,8 @@ function hideAllModals() {
   hideStageClearModal();
   hideStageFailModal();
   hideDefenseSupportModal();
+  hidePlayerActionModals();
+  $('#resetConfirmModal')?.classList.add('is-hidden');
 }
 
 function showStageClearModal() {
@@ -1427,8 +1652,13 @@ function initStartScreen() {
   $('#startButton')?.addEventListener('click', handleGameStart);
 
   $('#settingsButton')?.addEventListener('click', () => {
-    moveToPage(PAGE_CONFIG.settingsPage, '설정 화면은 다음 단계에서 연결할 예정입니다.');
+    renderQuickSettings();
+    $('#quickSettingsModal')?.classList.remove('is-hidden');
   });
+
+  $('#closeQuickSettingsButton')?.addEventListener('click', hideQuickSettings);
+  $('#quickVolumeSlider')?.addEventListener('input', (event) => updateVolume(event.target.value));
+  $('#quickMuteToggleButton')?.addEventListener('click', toggleMute);
 }
 
 function handleBottomNavigation(button) {
@@ -1445,6 +1675,11 @@ function handleBottomNavigation(button) {
     }
 
     showToast('지금은 선수 탭만 선택할 수 있습니다.');
+    return;
+  }
+
+  if (target === 'shop' && !isShopUnlocked()) {
+    showToast('상점은 튜토리얼 완료 후 이용할 수 있습니다.');
     return;
   }
 
@@ -1483,16 +1718,27 @@ function handleBottomNavigation(button) {
     return;
   }
 
+  if (target === 'settings') {
+    if (currentScreenId === 'settingsScreen') {
+      showToast('현재 설정 화면입니다.');
+      return;
+    }
+
+    showScreen('settings');
+    return;
+  }
+
+  if (target === 'dungeon') {
+    showToast('던전은 아직 잠겨 있습니다.');
+    return;
+  }
+
   const targetPageMap = {
-    synergy: PAGE_CONFIG.synergyPage,
-    log: PAGE_CONFIG.logPage,
-    settings: PAGE_CONFIG.settingsPage,
+    shop: PAGE_CONFIG.shopPage,
   };
 
   const fallbackMap = {
-    synergy: '시너지 화면은 다음 단계에서 연결할 예정입니다.',
-    log: '로그 화면은 다음 단계에서 연결할 예정입니다.',
-    settings: '설정 화면은 다음 단계에서 연결할 예정입니다.',
+    shop: '상점 화면은 다음 단계에서 연결할 예정입니다.',
   };
 
   moveToPage(targetPageMap[target], fallbackMap[target] ?? '해당 화면은 다음 단계에서 연결할 예정입니다.');
@@ -1533,7 +1779,92 @@ function initAttackScreen() {
   });
 }
 
+function renderSettingsScreen() {
+  const volume = Math.max(0, Math.min(100, Math.floor(normalizeNumber(gameState.settings.volume, 70))));
+  const muted = Boolean(gameState.settings.muted);
+  const slider = $('#volumeSlider');
+
+  if (slider) slider.value = String(volume);
+  if ($('#volumeValue')) $('#volumeValue').textContent = muted ? '음소거' : `${volume}%`;
+  if ($('#muteIcon')) $('#muteIcon').textContent = muted ? '🔇' : '🔊';
+  if ($('#muteLabel')) $('#muteLabel').textContent = muted ? '음소거 해제' : '음소거';
+  renderQuickSettings();
+  renderCommonStatus();
+}
+
+function renderQuickSettings() {
+  const volume = Math.max(0, Math.min(100, Math.floor(normalizeNumber(gameState.settings.volume, 70))));
+  const muted = Boolean(gameState.settings.muted);
+  const slider = $('#quickVolumeSlider');
+
+  if (slider) slider.value = String(volume);
+  if ($('#quickVolumeValue')) $('#quickVolumeValue').textContent = muted ? '음소거' : `${volume}%`;
+  if ($('#quickMuteIcon')) $('#quickMuteIcon').textContent = muted ? '🔇' : '🔊';
+  if ($('#quickMuteLabel')) $('#quickMuteLabel').textContent = muted ? '음소거 해제' : '음소거';
+}
+
+function hideQuickSettings() {
+  $('#quickSettingsModal')?.classList.add('is-hidden');
+}
+
+function updateVolume(value) {
+  gameState.settings.volume = Math.max(0, Math.min(100, Math.floor(normalizeNumber(value, 70))));
+  if (gameState.settings.volume > 0) gameState.settings.muted = false;
+  saveGameState();
+  renderSettingsScreen();
+}
+
+function toggleMute() {
+  gameState.settings.muted = !gameState.settings.muted;
+  saveGameState();
+  renderSettingsScreen();
+  showToast(gameState.settings.muted ? '게임 소리가 음소거되었습니다.' : '게임 소리가 켜졌습니다.');
+}
+
+function resetGameProgress() {
+  stopAttackTutorial();
+  stopDefenseMode();
+  window.clearTimeout(defenseSupportModalTimerId);
+  setDefenseSupportPending(false);
+  setPlayerTabGuidance(false);
+  selectedRecruitPosition = '';
+  selectedPlayerTarget = '';
+  gameState = cloneDefaultState();
+  attackState = createAttackState();
+  defenseState = { isRunning: false };
+  saveGameState();
+  clearRepresentativeFormDraft();
+  if ($('#recruitPlayerNameInput')) $('#recruitPlayerNameInput').value = '';
+  if ($('#renamePlayerInput')) $('#renamePlayerInput').value = '';
+  hideRecruitModals();
+  hidePlayerActionModals();
+  $('#resetConfirmModal')?.classList.add('is-hidden');
+  selectPlayersSection('management');
+  renderRepresentativeScreen();
+  renderAttackScreen();
+  renderPlayersScreen();
+  renderSettingsScreen();
+  showScreen('start');
+  showToast('게임이 초기화되었습니다. 처음부터 시작해 주세요.');
+}
+
+function initSettingsScreen() {
+  $('#volumeSlider')?.addEventListener('input', (event) => updateVolume(event.target.value));
+  $('#muteToggleButton')?.addEventListener('click', toggleMute);
+  $('#resetGameButton')?.addEventListener('click', () => {
+    $('#resetConfirmModal')?.classList.remove('is-hidden');
+  });
+  $('#confirmResetButton')?.addEventListener('click', resetGameProgress);
+  $('#cancelResetButton')?.addEventListener('click', () => {
+    $('#resetConfirmModal')?.classList.add('is-hidden');
+  });
+}
+
 function initPlayersScreen() {
+  $$('.players-section-tab').forEach((button) => {
+    button.addEventListener('click', () => selectPlayersSection(button.dataset.playerSection));
+  });
+
   $('#playerManagementList')?.addEventListener('click', (event) => {
     const upgradeButton = event.target.closest('[data-upgrade-player]');
     if (upgradeButton) {
@@ -1544,7 +1875,21 @@ function initPlayersScreen() {
     const recruitButton = event.target.closest('[data-recruit-position]');
     if (recruitButton) {
       openRecruitConfirmation(recruitButton.dataset.recruitPosition);
+      return;
     }
+
+    const playerCard = event.target.closest('[data-player-card]');
+    if (playerCard) {
+      openPlayerActionModal(playerCard.dataset.playerCard);
+    }
+  });
+
+  $('#playerManagementList')?.addEventListener('keydown', (event) => {
+    if (!['Enter', ' '].includes(event.key)) return;
+    const playerCard = event.target.closest('[data-player-card]');
+    if (!playerCard || event.target.closest('button')) return;
+    event.preventDefault();
+    openPlayerActionModal(playerCard.dataset.playerCard);
   });
 
   $('#recruitConfirmYesButton')?.addEventListener('click', openRecruitSetup);
@@ -1556,12 +1901,29 @@ function initPlayersScreen() {
     }
   });
   $('#recruitPlayerSetupButton')?.addEventListener('click', completePlayerRecruitment);
+  $('#closePlayerActionButton')?.addEventListener('click', hidePlayerActionModals);
+  $('#openRenamePlayerButton')?.addEventListener('click', openRenamePlayerModal);
+  $('#openRepresentativeConfirmButton')?.addEventListener('click', openRepresentativeConfirmation);
+  $('#confirmRenamePlayerButton')?.addEventListener('click', confirmRenamePlayer);
+  $('#cancelRenamePlayerButton')?.addEventListener('click', () => {
+    $('#renamePlayerModal')?.classList.add('is-hidden');
+    $('#playerActionModal')?.classList.remove('is-hidden');
+  });
+  $('#renamePlayerInput')?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') confirmRenamePlayer();
+  });
+  $('#confirmRepresentativeButton')?.addEventListener('click', confirmRepresentativeChange);
+  $('#cancelRepresentativeButton')?.addEventListener('click', () => {
+    $('#representativeConfirmModal')?.classList.add('is-hidden');
+    $('#playerActionModal')?.classList.remove('is-hidden');
+  });
 }
 
 function initBottomNavigation() {
   $$('.bottom-nav-button').forEach((button) => {
     button.addEventListener('click', () => handleBottomNavigation(button));
   });
+  renderNavigationLocks();
 }
 
 function initGame() {
@@ -1569,6 +1931,7 @@ function initGame() {
   initRepresentativeScreen();
   initAttackScreen();
   initPlayersScreen();
+  initSettingsScreen();
   initBottomNavigation();
   showScreen('start');
 }
@@ -1592,18 +1955,7 @@ window.BaseballMonsterHunter = {
     renderPlayersScreen();
   },
   resetSave() {
-    stopAttackTutorial();
-    stopDefenseMode();
-    window.clearTimeout(defenseSupportModalTimerId);
-    setDefenseSupportPending(false);
-    setPlayerTabGuidance(false);
-    gameState = cloneDefaultState();
-    attackState = createAttackState();
-    saveGameState();
-    renderRepresentativeScreen();
-    renderAttackScreen();
-    renderPlayersScreen();
-    showScreen('start');
+    resetGameProgress();
   },
 };
 

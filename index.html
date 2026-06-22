@@ -31,6 +31,23 @@
           <img src="assets/btn-start.png" alt="게임 시작" draggable="false" />
         </button>
       </div>
+
+      <div id="quickSettingsModal" class="quick-settings-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="quickSettingsTitle">
+        <div class="quick-settings-card">
+          <button id="closeQuickSettingsButton" class="modal-close-button" type="button" aria-label="간이 설정 닫기">×</button>
+          <p>QUICK SETTINGS</p>
+          <h2 id="quickSettingsTitle">소리 설정</h2>
+          <div class="quick-volume-row">
+            <span aria-hidden="true">🔉</span>
+            <input id="quickVolumeSlider" class="volume-slider" type="range" min="0" max="100" value="70" aria-label="게임 음량" />
+            <strong id="quickVolumeValue">70%</strong>
+          </div>
+          <button id="quickMuteToggleButton" class="settings-option-button" type="button">
+            <span id="quickMuteIcon" aria-hidden="true">🔊</span>
+            <strong id="quickMuteLabel">음소거</strong>
+          </button>
+        </div>
+      </div>
     </section>
 
     <section id="representativeScreen" class="representative-screen is-hidden" aria-label="대표 타자 설정 화면">
@@ -137,11 +154,11 @@
         <button class="bottom-nav-button is-current" type="button" data-target="players" aria-current="page" aria-label="선수 화면">
           <img src="assets/nav-player-on.png" alt="선수" draggable="false" />
         </button>
-        <button class="bottom-nav-button" type="button" data-target="synergy" aria-label="시너지 화면으로 이동">
-          <img src="assets/nav-synergy-off.png" alt="시너지" draggable="false" />
+        <button class="bottom-nav-button is-locked" type="button" data-target="shop" aria-disabled="true" aria-label="상점, 튜토리얼 완료 후 해금">
+          <img src="assets/nav-shop-off.png" alt="상점" draggable="false" />
         </button>
-        <button class="bottom-nav-button" type="button" data-target="log" aria-label="로그 화면으로 이동">
-          <img src="assets/nav-log-off.png" alt="로그" draggable="false" />
+        <button class="bottom-nav-button is-locked" type="button" data-target="dungeon" aria-disabled="true" aria-label="던전, 잠김">
+          <img src="assets/nav-dungeon-off.png" alt="던전" draggable="false" />
         </button>
         <button class="bottom-nav-button" type="button" data-target="settings" aria-label="설정 화면으로 이동">
           <img src="assets/nav-settings-off.png" alt="설정" draggable="false" />
@@ -177,15 +194,28 @@
       </header>
 
       <div class="players-scroll-area">
-        <section class="players-title-card">
-          <img src="assets/icon-representative.png" alt="" draggable="false" />
-          <div>
-            <p>TEAM ROSTER</p>
-            <h1>선수 관리</h1>
-          </div>
+        <div class="players-section-tabs" role="tablist" aria-label="선수 메뉴">
+          <button id="playerManagementTab" class="players-section-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="playerManagementPanel" data-player-section="management">
+            선수 관리
+          </button>
+          <button id="synergyTab" class="players-section-tab" type="button" role="tab" aria-selected="false" aria-controls="synergyPanel" data-player-section="synergy">
+            시너지
+          </button>
+        </div>
+
+        <section id="playerManagementPanel" class="players-section-panel" role="tabpanel" aria-labelledby="playerManagementTab">
+          <div id="playerManagementList" class="player-management-list" aria-live="polite"></div>
         </section>
 
-        <div id="playerManagementList" class="player-management-list" aria-live="polite"></div>
+        <section id="synergyPanel" class="players-section-panel is-hidden" role="tabpanel" aria-labelledby="synergyTab">
+          <div class="synergy-coming-soon">
+            <span class="synergy-coming-soon-icon" aria-hidden="true">◆</span>
+            <p>TEAM SYNERGY</p>
+            <h1>시너지</h1>
+            <strong>준비 중</strong>
+            <span>보유 선수 조합에 따른 시너지 효과가 추가될 예정입니다.</span>
+          </div>
+        </section>
       </div>
 
       <nav class="bottom-navigation players-bottom-navigation" aria-label="하단 메뉴">
@@ -195,11 +225,11 @@
         <button class="bottom-nav-button is-current" type="button" data-target="players" aria-current="page" aria-label="선수 화면">
           <img src="assets/nav-player-on.png" alt="선수" draggable="false" />
         </button>
-        <button class="bottom-nav-button" type="button" data-target="synergy" aria-label="시너지 화면으로 이동">
-          <img src="assets/nav-synergy-off.png" alt="시너지" draggable="false" />
+        <button class="bottom-nav-button is-locked" type="button" data-target="shop" aria-disabled="true" aria-label="상점, 튜토리얼 완료 후 해금">
+          <img src="assets/nav-shop-off.png" alt="상점" draggable="false" />
         </button>
-        <button class="bottom-nav-button" type="button" data-target="log" aria-label="로그 화면으로 이동">
-          <img src="assets/nav-log-off.png" alt="로그" draggable="false" />
+        <button class="bottom-nav-button is-locked" type="button" data-target="dungeon" aria-disabled="true" aria-label="던전, 잠김">
+          <img src="assets/nav-dungeon-off.png" alt="던전" draggable="false" />
         </button>
         <button class="bottom-nav-button" type="button" data-target="settings" aria-label="설정 화면으로 이동">
           <img src="assets/nav-settings-off.png" alt="설정" draggable="false" />
@@ -245,6 +275,125 @@
             <label for="recruitPlayerNameInput">선수 이름</label>
             <input id="recruitPlayerNameInput" type="text" maxlength="8" autocomplete="off" placeholder="이름을 입력하세요" />
             <button id="recruitPlayerSetupButton" type="button">설정 <span>100G</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div id="playerActionModal" class="recruit-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="playerActionTitle">
+        <div class="player-action-card">
+          <button id="closePlayerActionButton" class="modal-close-button" type="button" aria-label="닫기">×</button>
+          <div class="player-action-summary">
+            <img id="playerActionImage" src="assets/player-representative.png" alt="" draggable="false" />
+            <div>
+              <p id="playerActionPosition">포수</p>
+              <h2 id="playerActionTitle">선수 이름</h2>
+              <span id="playerActionRepresentativeBadge" class="representative-badge">대표 타자</span>
+            </div>
+          </div>
+          <div class="player-action-buttons">
+            <button id="openRenamePlayerButton" class="player-action-button" type="button">
+              <span class="player-action-icon" aria-hidden="true">✎</span>
+              <strong>이름 변경</strong>
+              <small>선수 이름을 새로 설정합니다.</small>
+            </button>
+            <button id="openRepresentativeConfirmButton" class="player-action-button is-representative" type="button">
+              <span class="player-action-icon" aria-hidden="true">★</span>
+              <strong>대표 타자로 지정하기</strong>
+              <small>공격 모드에 사용할 타자를 변경합니다.</small>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="renamePlayerModal" class="recruit-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="renamePlayerTitle">
+        <div class="recruit-confirm-card">
+          <p class="recruit-modal-kicker">PLAYER NAME</p>
+          <h2 id="renamePlayerTitle">이름 변경</h2>
+          <input id="renamePlayerInput" class="modal-name-input" type="text" maxlength="8" autocomplete="off" placeholder="이름을 입력하세요" />
+          <div class="recruit-confirm-actions">
+            <button id="confirmRenamePlayerButton" class="recruit-confirm-button is-yes" type="button">변경</button>
+            <button id="cancelRenamePlayerButton" class="recruit-confirm-button is-no" type="button">아니오</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="representativeConfirmModal" class="recruit-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="representativeConfirmTitle">
+        <div class="recruit-confirm-card">
+          <p class="recruit-modal-kicker">CHANGE BATTER</p>
+          <h2 id="representativeConfirmTitle">대표 타자 변경</h2>
+          <p><strong id="representativeCandidateName">선수</strong> 선수를 대표 타자로 지정할까요?</p>
+          <p>앞으로 공격 모드에 이 선수와 해당 선수의 공격력이 적용됩니다.</p>
+          <p class="recruit-cost-guide">변경 비용 <strong>1,000G</strong></p>
+          <div class="recruit-confirm-actions">
+            <button id="confirmRepresentativeButton" class="recruit-confirm-button is-yes" type="button">예</button>
+            <button id="cancelRepresentativeButton" class="recruit-confirm-button is-no" type="button">아니오</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="settingsScreen" class="settings-screen is-hidden" aria-label="설정 화면">
+      <header class="representative-status settings-status" aria-label="현재 게임 상태">
+        <div class="status-slot status-slot--gold">
+          <img class="status-icon" src="assets/icon-gold.png" alt="" draggable="false" />
+          <div class="status-text"><span>Gold</span><strong id="settingsStatusGold">0G</strong></div>
+        </div>
+        <div class="status-slot status-slot--stage">
+          <img class="status-icon" src="assets/icon-stage.png" alt="" draggable="false" />
+          <div class="status-text"><span>Stage</span><strong id="settingsStatusStage">Stage 1</strong></div>
+        </div>
+        <div class="status-slot status-slot--mode">
+          <img class="status-icon" src="assets/icon-mode.png" alt="" draggable="false" />
+          <div class="status-text"><span>Mode</span><strong id="settingsStatusMode">공격</strong></div>
+        </div>
+      </header>
+
+      <div class="settings-scroll-area">
+        <section class="settings-title">
+          <p>GAME OPTIONS</p>
+          <h1>설정</h1>
+        </section>
+
+        <section class="settings-card">
+          <div class="settings-card-heading">
+            <div><p>SOUND</p><h2>게임 음량</h2></div>
+            <strong id="volumeValue">70%</strong>
+          </div>
+          <input id="volumeSlider" class="volume-slider" type="range" min="0" max="100" value="70" aria-label="게임 음량" />
+          <button id="muteToggleButton" class="settings-option-button" type="button">
+            <span id="muteIcon" aria-hidden="true">🔊</span>
+            <strong id="muteLabel">음소거</strong>
+          </button>
+        </section>
+
+        <section class="settings-card">
+          <div class="settings-card-heading">
+            <div><p>DATA</p><h2>게임 데이터</h2></div>
+          </div>
+          <button id="resetGameButton" class="settings-wide-button is-reset" type="button">
+            <span aria-hidden="true">↻</span>
+            <div><strong>처음부터 다시 시작하기</strong><small>모든 진행 상황을 초기화합니다.</small></div>
+          </button>
+        </section>
+      </div>
+
+      <nav class="bottom-navigation settings-bottom-navigation" aria-label="하단 메뉴">
+        <button class="bottom-nav-button" type="button" data-target="game" aria-label="경기 화면으로 이동"><img src="assets/nav-game-off.png" alt="경기" draggable="false" /></button>
+        <button class="bottom-nav-button" type="button" data-target="players" aria-label="선수 화면으로 이동"><img src="assets/nav-player-off.png" alt="선수" draggable="false" /></button>
+        <button class="bottom-nav-button is-locked" type="button" data-target="shop" aria-disabled="true" aria-label="상점, 튜토리얼 완료 후 해금"><img src="assets/nav-shop-off.png" alt="상점" draggable="false" /></button>
+        <button class="bottom-nav-button is-locked" type="button" data-target="dungeon" aria-disabled="true" aria-label="던전, 잠김"><img src="assets/nav-dungeon-off.png" alt="던전" draggable="false" /></button>
+        <button class="bottom-nav-button is-current" type="button" data-target="settings" aria-current="page" aria-label="설정 화면"><img src="assets/nav-settings-on.png" alt="설정" draggable="false" /></button>
+      </nav>
+
+      <div id="resetConfirmModal" class="recruit-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="resetConfirmTitle">
+        <div class="recruit-confirm-card">
+          <p class="recruit-modal-kicker">RESET GAME</p>
+          <h2 id="resetConfirmTitle">처음부터 다시 시작</h2>
+          <p class="reset-warning-line">게임의 모든 진행 과정과 선수 데이터가 초기화됩니다.</p>
+          <p><strong>정말로 다시 시작할까요?</strong></p>
+          <div class="recruit-confirm-actions">
+            <button id="confirmResetButton" class="recruit-confirm-button is-yes" type="button">예</button>
+            <button id="cancelResetButton" class="recruit-confirm-button is-no" type="button">아니오</button>
           </div>
         </div>
       </div>
@@ -338,11 +487,11 @@
         <button class="bottom-nav-button" type="button" data-target="players" aria-label="선수 화면으로 이동">
           <img src="assets/nav-player-off.png" alt="선수" draggable="false" />
         </button>
-        <button class="bottom-nav-button" type="button" data-target="synergy" aria-label="시너지 화면으로 이동">
-          <img src="assets/nav-synergy-off.png" alt="시너지" draggable="false" />
+        <button class="bottom-nav-button is-locked" type="button" data-target="shop" aria-disabled="true" aria-label="상점, 튜토리얼 완료 후 해금">
+          <img src="assets/nav-shop-off.png" alt="상점" draggable="false" />
         </button>
-        <button class="bottom-nav-button" type="button" data-target="log" aria-label="로그 화면으로 이동">
-          <img src="assets/nav-log-off.png" alt="로그" draggable="false" />
+        <button class="bottom-nav-button is-locked" type="button" data-target="dungeon" aria-disabled="true" aria-label="던전, 잠김">
+          <img src="assets/nav-dungeon-off.png" alt="던전" draggable="false" />
         </button>
         <button class="bottom-nav-button" type="button" data-target="settings" aria-label="설정 화면으로 이동">
           <img src="assets/nav-settings-off.png" alt="설정" draggable="false" />
