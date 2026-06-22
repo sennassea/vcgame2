@@ -3080,7 +3080,7 @@ button {
 }
 
 .battle-batter.is-wide-swing-frame {
-  width: clamp(159px, 41vw, 214px);
+  width: clamp(142px, 36vw, 190px);
 }
 
 .attack-screen.is-defense .battle-batter {
