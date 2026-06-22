@@ -3119,8 +3119,8 @@ button {
 .damage-popup {
   position: absolute;
   z-index: 5;
-  right: 64px;
-  top: 46%;
+  right: var(--result-popup-right, 64px);
+  top: var(--result-popup-top, 46%);
   min-width: 96px;
   padding: 9px 12px;
   border: 2px solid rgba(255, 230, 126, 0.92);
@@ -3144,8 +3144,8 @@ button {
 }
 
 .defense-result-popup {
-  top: calc(46% - 20px);
-  right: 32px;
+  top: calc(var(--result-popup-top, 46%) - 20px);
+  right: calc(var(--result-popup-right, 64px) - 32px);
   display: flex;
   align-items: center;
   gap: 8px;

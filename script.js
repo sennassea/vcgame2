@@ -419,7 +419,28 @@ function getModeName(mode) {
 function getMonsterStageScale(stage) {
   const normalizedStage = Math.max(1, Math.floor(normalizeNumber(stage, 1)));
   const cappedStage = Math.min(normalizedStage, 10);
-  return 1 + (cappedStage - 1) * (0.8 / 9);
+  return 1 + (cappedStage - 1) * (1.45 / 9);
+}
+
+function getResultPopupTop(stage) {
+  const normalizedStage = Math.max(1, Math.min(10, Math.floor(normalizeNumber(stage, 1))));
+  return 46 - (normalizedStage - 1) * (26 / 9);
+}
+
+function getResultPopupRight(stage) {
+  const normalizedStage = Math.max(1, Math.min(10, Math.floor(normalizeNumber(stage, 1))));
+  return 64 + (normalizedStage - 1) * (116 / 9);
+}
+
+function applyBattleStagePresentation() {
+  const battleStage = $('.battle-stage');
+  const battleMonster = $('#battleMonster');
+  const monsterScale = getMonsterStageScale(gameState.currentStage);
+
+  battleMonster?.style.setProperty('--monster-stage-scale', String(monsterScale));
+  battleMonster?.style.setProperty('--monster-hit-scale', String(monsterScale * 0.98));
+  battleStage?.style.setProperty('--result-popup-top', `${getResultPopupTop(gameState.currentStage)}%`);
+  battleStage?.style.setProperty('--result-popup-right', `${getResultPopupRight(gameState.currentStage)}px`);
 }
 
 function getAttackConfigForStage(stage) {
@@ -1680,9 +1701,7 @@ function renderDefenseScreen() {
     battleBatter.src = battleBatter.getAttribute('src') || DEFENSE_FRAMES[0];
   }
   if (battleMonster) {
-    const monsterScale = getMonsterStageScale(gameState.currentStage);
-    battleMonster.style.setProperty('--monster-stage-scale', String(monsterScale));
-    battleMonster.style.setProperty('--monster-hit-scale', String(monsterScale * 0.98));
+    applyBattleStagePresentation();
   }
 
   renderCommonStatus();
@@ -1739,9 +1758,7 @@ function renderAttackScreen() {
   }
 
   if (battleMonster) {
-    const monsterScale = getMonsterStageScale(gameState.currentStage);
-    battleMonster.style.setProperty('--monster-stage-scale', String(monsterScale));
-    battleMonster.style.setProperty('--monster-hit-scale', String(monsterScale * 0.98));
+    applyBattleStagePresentation();
   }
 
   renderCommonStatus();
