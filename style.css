@@ -1890,6 +1890,15 @@ button {
   backdrop-filter: blur(4px);
 }
 
+.global-modal {
+  position: fixed;
+  width: var(--screen-width);
+  height: var(--screen-height);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
 .player-action-card {
   position: relative;
   width: min(100%, 420px);
@@ -1914,21 +1923,6 @@ button {
     inset 0 2px 8px rgba(255, 255, 255, 0.18),
     0 19px 38px rgba(0, 0, 0, 0.54),
     0 0 25px rgba(255, 219, 76, 0.22);
-}
-
-.tutorial-complete-emblem {
-  display: grid;
-  place-items: center;
-  width: 66px;
-  height: 66px;
-  margin: 0 auto 10px;
-  border: 3px solid #fff3aa;
-  border-radius: 50%;
-  color: #563500;
-  background: linear-gradient(180deg, #fff287, #ffb718);
-  font-size: 36px;
-  text-shadow: 0 1px 0 #fff;
-  box-shadow: 0 0 19px rgba(255, 222, 91, 0.65);
 }
 
 .tutorial-complete-card h2 {

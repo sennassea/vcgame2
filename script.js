@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'baseballMonsterHunterSave';
+const MAX_GOLD = 10000;
 
 const PAGE_CONFIG = {
   // 다음 화면을 별도 파일로 만들면 null 대신 실제 파일명을 넣으면 됩니다.
@@ -108,6 +109,7 @@ const DEFAULT_GAME_STATE = {
     muted: false,
   },
   claimedStageRewards: {},
+  goldCapNotified: false,
   tutorialFlags: {
     representativeBatterSet: false,
     representativePitcherSet: false,
@@ -153,7 +155,7 @@ const STAGE_CONFIGS = {
   3: {
     monsterName: 'A 몬스터',
     monsterLevel: 3,
-    maxHp: 300,
+    maxHp: 1800,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -165,7 +167,7 @@ const STAGE_CONFIGS = {
   4: {
     monsterName: 'A 몬스터',
     monsterLevel: 4,
-    maxHp: 450,
+    maxHp: 2700,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -177,7 +179,7 @@ const STAGE_CONFIGS = {
   5: {
     monsterName: 'A 몬스터',
     monsterLevel: 5,
-    maxHp: 600,
+    maxHp: 3800,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -189,7 +191,7 @@ const STAGE_CONFIGS = {
   6: {
     monsterName: 'A 몬스터',
     monsterLevel: 6,
-    maxHp: 780,
+    maxHp: 5100,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -201,7 +203,7 @@ const STAGE_CONFIGS = {
   7: {
     monsterName: 'A 몬스터',
     monsterLevel: 7,
-    maxHp: 960,
+    maxHp: 6600,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -213,7 +215,7 @@ const STAGE_CONFIGS = {
   8: {
     monsterName: 'A 몬스터',
     monsterLevel: 8,
-    maxHp: 1200,
+    maxHp: 8300,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -225,7 +227,7 @@ const STAGE_CONFIGS = {
   9: {
     monsterName: 'A 몬스터',
     monsterLevel: 9,
-    maxHp: 1500,
+    maxHp: 10200,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -238,7 +240,7 @@ const STAGE_CONFIGS = {
     monsterName: 'A 몬스터 BOSS',
     monsterLevel: 10,
     isBoss: true,
-    maxHp: 2400,
+    maxHp: 15000,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -328,6 +330,7 @@ function loadGameState() {
     return {
       ...defaultState,
       ...parsedData,
+      gold: Math.max(0, Math.min(MAX_GOLD, Math.floor(normalizeNumber(parsedData.gold)))),
       representativePlayer: {
         ...defaultState.representativePlayer,
         ...(parsedData.representativePlayer ?? {}),
@@ -377,14 +380,39 @@ function formatGold(value) {
   return `${Math.max(0, Math.floor(normalizeNumber(value))).toLocaleString('ko-KR')}G`;
 }
 
+function showGoldCapModal() {
+  $('#goldCapModal')?.classList.remove('is-hidden');
+}
+
+function setGoldAmount(value, { notifyCap = true } = {}) {
+  const previousGold = gameState.gold;
+  gameState.gold = Math.max(0, Math.min(MAX_GOLD, Math.floor(normalizeNumber(value))));
+
+  if (
+    notifyCap &&
+    previousGold < MAX_GOLD &&
+    gameState.gold >= MAX_GOLD &&
+    !gameState.goldCapNotified
+  ) {
+    gameState.goldCapNotified = true;
+    window.setTimeout(showGoldCapModal, 80);
+  }
+
+  return gameState.gold;
+}
+
+function changeGold(amount, options) {
+  return setGoldAmount(gameState.gold + normalizeNumber(amount), options);
+}
+
 function getModeName(mode) {
   return mode === 'defense' ? '수비' : '공격';
 }
 
 function getMonsterStageScale(stage) {
   const normalizedStage = Math.max(1, Math.floor(normalizeNumber(stage, 1)));
-  if (normalizedStage === 10) return 1.52;
-  return Math.min(1 + (normalizedStage - 1) * 0.055, 1.44);
+  const cappedStage = Math.min(normalizedStage, 10);
+  return 1 + (cappedStage - 1) * (0.8 / 9);
 }
 
 function getAttackConfigForStage(stage) {
@@ -399,7 +427,9 @@ function getStageMonsterDisplayName(config) {
 }
 
 function getStageClearReward(stage) {
-  return stage >= 3 && stage <= 9 ? (stage - 2) * 500 : 0;
+  if (stage >= 3 && stage <= 9) return 300;
+  if (stage === 10) return 1000;
+  return 0;
 }
 
 function getDefenseRewards() {
@@ -1236,7 +1266,7 @@ function selectPlayersSection(sectionName) {
 
 function completeBasicTutorial() {
   if (!gameState.tutorialFlags.tutorialCompletionRewardGranted) {
-    gameState.gold += 500;
+    changeGold(500);
     gameState.tutorialFlags.tutorialCompletionRewardGranted = true;
   }
   gameState.tutorialFlags.tutorialComplete = true;
@@ -1802,7 +1832,7 @@ function showDefenseResult(title, detail = '', resultType = '') {
 }
 
 function addDefenseGold(amount) {
-  gameState.gold = Math.max(0, Math.floor(gameState.gold + amount));
+  changeGold(amount);
   saveGameState();
   renderCommonStatus();
 }
@@ -1823,7 +1853,7 @@ function completeDefensePitchTutorialStep() {
 
   gameState.tutorialFlags.defenseSupportGranted = true;
   gameState.tutorialFlags.tutorialStep = 'defenseSupport';
-  gameState.gold += 100;
+  changeGold(100);
   saveGameState();
   renderCommonStatus();
   stopDefenseMode();
@@ -2049,6 +2079,8 @@ function hideAllModals() {
   $('#resetConfirmModal')?.classList.add('is-hidden');
   $('#modeSwitchModal')?.classList.add('is-hidden');
   $('#synergyIntroModal')?.classList.add('is-hidden');
+  $('#betaCompleteModal')?.classList.add('is-hidden');
+  $('#goldCapModal')?.classList.add('is-hidden');
   if (gameState.tutorialFlags.tutorialComplete) {
     $('#tutorialCompleteModal')?.classList.add('is-hidden');
   }
@@ -2081,7 +2113,7 @@ function showStageClearModal() {
   }
 
   if (reward > 0 && !gameState.claimedStageRewards[gameState.currentStage]) {
-    gameState.gold += reward;
+    changeGold(reward);
     gameState.claimedStageRewards[gameState.currentStage] = true;
     saveGameState();
     renderCommonStatus();
@@ -2171,7 +2203,16 @@ function confirmStageClear() {
   }
 
   hideStageClearModal();
-  showToast('A 몬스터 BOSS를 물리쳤습니다!');
+  stopAttackTutorial();
+  $('#betaCompleteModal')?.classList.remove('is-hidden');
+}
+
+function finishBetaAndStartDefense() {
+  $('#betaCompleteModal')?.classList.add('is-hidden');
+  gameState.currentMode = 'defense';
+  saveGameState();
+  startDefenseMode();
+  showToast('베타 스테이지 완료! 수비 모드에서 선수들을 계속 육성할 수 있습니다.');
 }
 
 function openModeSwitchConfirmation() {
@@ -2218,7 +2259,7 @@ function confirmModeSwitch() {
 function beginSynergyPlayerGuidance() {
   $('#synergyIntroModal')?.classList.add('is-hidden');
   if (!gameState.tutorialFlags.synergySupportGranted) {
-    gameState.gold += 100;
+    changeGold(100);
     gameState.tutorialFlags.synergySupportGranted = true;
   }
   gameState.tutorialFlags.tutorialStep = 'openPlayersForSynergy';
@@ -2412,6 +2453,10 @@ function initAttackScreen() {
     $('#modeSwitchModal')?.classList.add('is-hidden');
   });
   $('#synergyIntroConfirmButton')?.addEventListener('click', beginSynergyPlayerGuidance);
+  $('#betaCompleteConfirmButton')?.addEventListener('click', finishBetaAndStartDefense);
+  $('#goldCapConfirmButton')?.addEventListener('click', () => {
+    $('#goldCapModal')?.classList.add('is-hidden');
+  });
   $$('.defense-rule-item').forEach((button) => {
     button.addEventListener('click', () => {
       showDefenseRuleTooltip(button);
@@ -2582,14 +2627,14 @@ window.BaseballMonsterHunter = {
     return JSON.parse(JSON.stringify(gameState));
   },
   setGold(value) {
-    gameState.gold = Math.max(0, Math.floor(normalizeNumber(value)));
+    setGoldAmount(value);
     saveGameState();
     renderRepresentativeScreen();
     renderAttackScreen();
     renderPlayersScreen();
   },
   addGold(amount) {
-    gameState.gold = Math.max(0, Math.floor(gameState.gold + normalizeNumber(amount)));
+    changeGold(amount);
     saveGameState();
     renderRepresentativeScreen();
     renderAttackScreen();
