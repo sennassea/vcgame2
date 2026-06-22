@@ -3078,6 +3078,10 @@ button {
   transition: transform 140ms ease;
 }
 
+.battle-batter.is-wide-swing-frame {
+  width: clamp(159px, 41vw, 214px);
+}
+
 .attack-screen.is-defense .battle-batter {
   left: 8px;
   bottom: 8px;
@@ -3102,7 +3106,7 @@ button {
 }
 
 .battle-monster.is-crying {
-  transform: scale(calc(var(--monster-stage-scale, 1) * 1.28));
+  transform: scale(var(--monster-stage-scale, 1));
 }
 
 .battle-monster.is-boss {

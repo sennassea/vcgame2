@@ -155,7 +155,7 @@ const STAGE_CONFIGS = {
   3: {
     monsterName: 'A 몬스터',
     monsterLevel: 3,
-    maxHp: 1800,
+    maxHp: 1000,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -167,7 +167,7 @@ const STAGE_CONFIGS = {
   4: {
     monsterName: 'A 몬스터',
     monsterLevel: 4,
-    maxHp: 2700,
+    maxHp: 1600,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -179,7 +179,7 @@ const STAGE_CONFIGS = {
   5: {
     monsterName: 'A 몬스터',
     monsterLevel: 5,
-    maxHp: 3800,
+    maxHp: 2300,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -191,7 +191,7 @@ const STAGE_CONFIGS = {
   6: {
     monsterName: 'A 몬스터',
     monsterLevel: 6,
-    maxHp: 5100,
+    maxHp: 3200,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -203,7 +203,7 @@ const STAGE_CONFIGS = {
   7: {
     monsterName: 'A 몬스터',
     monsterLevel: 7,
-    maxHp: 6600,
+    maxHp: 4300,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -215,7 +215,7 @@ const STAGE_CONFIGS = {
   8: {
     monsterName: 'A 몬스터',
     monsterLevel: 8,
-    maxHp: 8300,
+    maxHp: 5600,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -227,7 +227,7 @@ const STAGE_CONFIGS = {
   9: {
     monsterName: 'A 몬스터',
     monsterLevel: 9,
-    maxHp: 10200,
+    maxHp: 7200,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -240,7 +240,7 @@ const STAGE_CONFIGS = {
     monsterName: 'A 몬스터 BOSS',
     monsterLevel: 10,
     isBoss: true,
-    maxHp: 15000,
+    maxHp: 10500,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -1792,6 +1792,7 @@ function setBatterFrame(frameIndex) {
   if (!battleBatter) return;
 
   battleBatter.src = ATTACK_FRAMES[frameIndex] ?? ATTACK_FRAMES[0];
+  battleBatter.classList.toggle('is-wide-swing-frame', frameIndex === 2);
 }
 
 function setMonsterImage(state) {
