@@ -1973,9 +1973,10 @@ button {
 }
 
 .stage-clear-reward {
-  display: inline-flex;
+  display: flex;
+  width: fit-content;
   gap: 6px;
-  margin-top: 13px;
+  margin: 13px auto 0;
   padding: 7px 12px;
   border-radius: 999px;
   color: #d8e8f6;
@@ -3260,9 +3261,10 @@ button {
 }
 
 .stage-clear-button {
+  display: block;
   width: min(100%, 220px);
   height: 54px;
-  margin-top: 18px;
+  margin: 18px auto 0;
   border: 0;
   border-radius: 999px;
   background: linear-gradient(180deg, #ffe45d 0%, #ffaf16 100%);
