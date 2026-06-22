@@ -518,6 +518,20 @@ function getSynergyState(teamKey) {
 
 function getSynergyEffectValue(teamKey) {
   const state = getSynergyState(teamKey);
+
+  if (teamKey === 'battery') {
+    if (state.step <= 0) return 0;
+    if (state.step === 1) return 1;
+    return (state.step - 1) * 5;
+  }
+
+  if (teamKey === 'outfield') {
+    if (state.step <= 0) return 0;
+    if (state.step === 1) return 1;
+    if (state.step <= 3) return 3;
+    return (state.step - 2) * 3;
+  }
+
   return state.step * state.effectPerStage;
 }
 
@@ -1210,7 +1224,7 @@ function renderSynergyScreen() {
       .filter((member) => !member.owned)
       .map((member) => SYNERGY_POSITION_INFO[member.position].name);
     const currentEffect = state.active
-      ? `${state.effectName} +${state.step * state.effectPerStage}${state.effectUnit}`
+      ? `${state.effectName} +${getSynergyEffectValue(teamKey)}${state.effectUnit}`
       : '효과 미적용';
     const nextCondition = state.active
       ? `모든 팀원이 Lv. ${state.nextRequiredLevel} 이상`
