@@ -300,9 +300,11 @@ const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
 let toastTimer = null;
+let statusInfoTooltipTimer = null;
 let defenseRuleTooltipTimer = null;
 let attackTimerId = null;
 let attackLoopId = null;
+let attackTimerBeepFrameId = null;
 let attackTimeoutIds = [];
 let defenseLoopId = null;
 let defenseTimeoutIds = [];
@@ -639,6 +641,73 @@ function showToast(message) {
   }, 1500);
 }
 
+function hideStatusInfoTooltip() {
+  window.clearTimeout(statusInfoTooltipTimer);
+  $('#statusInfoTooltip')?.classList.add('is-hidden');
+}
+
+function showStatusInfoTooltip(slot) {
+  const tooltip = $('#statusInfoTooltip');
+  const shell = $('.game-shell');
+  const screen = slot.closest('section');
+  if (!tooltip || !shell || !screen) return;
+
+  const isGold = slot.classList.contains('status-slot--gold');
+  tooltip.textContent = isGold
+    ? `골드는 최대 ${MAX_GOLD.toLocaleString('ko-KR')}G까지 보관할 수 있습니다.`
+    : '스테이지 1~9에는 일반 몬스터가 등장하고, 스테이지 10에는 보스 몬스터가 등장합니다.';
+  tooltip.style.width = isGold ? '180px' : '220px';
+  tooltip.classList.remove('is-hidden');
+
+  const shellRect = shell.getBoundingClientRect();
+  const screenRect = screen.getBoundingClientRect();
+  const slotRect = slot.getBoundingClientRect();
+  const tooltipRect = tooltip.getBoundingClientRect();
+  const slotCenter = slotRect.left - shellRect.left + slotRect.width / 2;
+  const screenLeft = screenRect.left - shellRect.left;
+  const screenRight = screenRect.right - shellRect.left;
+  const left = Math.max(
+    screenLeft + 8,
+    Math.min(screenRight - tooltipRect.width - 8, slotCenter - tooltipRect.width / 2)
+  );
+
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${slotRect.bottom - shellRect.top + 6}px`;
+  tooltip.style.setProperty(
+    '--tooltip-arrow-left',
+    `${Math.max(13, Math.min(tooltipRect.width - 13, slotCenter - left))}px`
+  );
+
+  window.clearTimeout(statusInfoTooltipTimer);
+  statusInfoTooltipTimer = window.setTimeout(hideStatusInfoTooltip, 3200);
+}
+
+function initStatusInfoTooltips() {
+  $$('.status-slot--gold, .status-slot--stage').forEach((slot) => {
+    slot.setAttribute('role', 'button');
+    slot.setAttribute('tabindex', '0');
+    slot.setAttribute(
+      'aria-label',
+      slot.classList.contains('status-slot--gold')
+        ? '골드 최대 보관 한도 안내'
+        : '스테이지 몬스터 안내'
+    );
+    slot.addEventListener('click', (event) => {
+      event.stopPropagation();
+      playSynthesizedSfx('click');
+      showStatusInfoTooltip(slot);
+    });
+    slot.addEventListener('keydown', (event) => {
+      if (!['Enter', ' '].includes(event.key)) return;
+      event.preventDefault();
+      playSynthesizedSfx('click');
+      showStatusInfoTooltip(slot);
+    });
+  });
+
+  document.addEventListener('click', hideStatusInfoTooltip);
+}
+
 function hideDefenseRuleTooltip() {
   const tooltip = $('#defenseRuleTooltip');
   if (!tooltip) return;
@@ -690,6 +759,11 @@ function clearAttackTimeouts() {
 
 function stopAttackTutorial() {
   attackState.isRunning = false;
+
+  if (attackTimerBeepFrameId) {
+    window.cancelAnimationFrame(attackTimerBeepFrameId);
+    attackTimerBeepFrameId = null;
+  }
 
   if (attackTimerId) {
     window.clearInterval(attackTimerId);
@@ -829,12 +903,14 @@ function playSynthesizedSfx(type) {
 
   if (type === 'click') {
     oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(330, startTime);
-    oscillator.frequency.exponentialRampToValueAtTime(190, startTime + 0.11);
-    gain.gain.setValueAtTime(resultVolume * 0.24, startTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.14);
+    oscillator.frequency.setValueAtTime(520, startTime);
+    oscillator.frequency.exponentialRampToValueAtTime(980, startTime + 0.045);
+    oscillator.frequency.exponentialRampToValueAtTime(620, startTime + 0.16);
+    gain.gain.setValueAtTime(0.0001, startTime);
+    gain.gain.exponentialRampToValueAtTime(resultVolume * 0.86, startTime + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.19);
     oscillator.start(startTime);
-    oscillator.stop(startTime + 0.16);
+    oscillator.stop(startTime + 0.21);
     return;
   }
 
@@ -852,6 +928,22 @@ function playSynthesizedSfx(type) {
     createSfxNoise(context, startTime + 0.5, 0.42, resultVolume * 0.18, 2400);
     oscillator.start(startTime);
     oscillator.stop(startTime + 0.94);
+    return;
+  }
+
+  if (type === 'failure') {
+    oscillator.type = 'sawtooth';
+    oscillator.frequency.setValueAtTime(392, startTime);
+    oscillator.frequency.setValueAtTime(293.66, startTime + 0.2);
+    oscillator.frequency.setValueAtTime(196, startTime + 0.42);
+    oscillator.frequency.exponentialRampToValueAtTime(98, startTime + 0.72);
+    gain.gain.setValueAtTime(resultVolume * 0.38, startTime);
+    gain.gain.setValueAtTime(resultVolume * 0.46, startTime + 0.2);
+    gain.gain.setValueAtTime(resultVolume * 0.54, startTime + 0.42);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.82);
+    createSfxNoise(context, startTime + 0.38, 0.34, resultVolume * 0.14, 520);
+    oscillator.start(startTime);
+    oscillator.stop(startTime + 0.84);
     return;
   }
 
@@ -2299,7 +2391,18 @@ function startAttackTutorial() {
 
     attackState.timeLeft -= 1;
     renderAttackScreen();
-    playAttackTimerBeep(attackState.timeLeft);
+
+    if (attackState.timeLeft >= 1 && attackState.timeLeft <= 5) {
+      const warningTime = attackState.timeLeft;
+      if (attackTimerBeepFrameId) {
+        window.cancelAnimationFrame(attackTimerBeepFrameId);
+      }
+      attackTimerBeepFrameId = window.requestAnimationFrame(() => {
+        attackTimerBeepFrameId = null;
+        if (!attackState.isRunning || attackState.timeLeft !== warningTime) return;
+        playAttackTimerBeep(warningTime);
+      });
+    }
 
     if (attackState.timeLeft <= 0 && attackState.hp > 0) {
       failAttackTutorial();
@@ -2394,6 +2497,7 @@ function showStageFailModal() {
       '수비 모드에서 골드를 벌어 선수를 강화해 보세요!';
   }
   stageFailModal.classList.remove('is-hidden');
+  playSynthesizedSfx('failure');
 }
 
 function hideStageFailModal() {
@@ -2976,6 +3080,7 @@ function initUiSoundEffects() {
 function initGame() {
   initBackgroundMusic();
   initUiSoundEffects();
+  initStatusInfoTooltips();
   initStartScreen();
   initRepresentativeScreen();
   initAttackScreen();

@@ -292,6 +292,55 @@ button {
     0 4px 8px rgba(0, 0, 0, 0.22);
 }
 
+.status-slot--gold,
+.status-slot--stage {
+  cursor: pointer;
+  transition: filter 120ms ease, transform 120ms ease;
+}
+
+.status-slot--gold:active,
+.status-slot--stage:active {
+  transform: scale(0.97);
+  filter: brightness(1.16);
+}
+
+.status-slot--gold:focus-visible,
+.status-slot--stage:focus-visible {
+  outline: 3px solid #8deaff;
+  outline-offset: 2px;
+}
+
+.status-info-tooltip {
+  position: absolute;
+  z-index: 70;
+  width: 210px;
+  max-width: calc(100% - 20px);
+  padding: 9px 10px;
+  border: 1.5px solid rgba(255, 218, 101, 0.96);
+  border-radius: 11px;
+  background: linear-gradient(180deg, rgba(7, 70, 124, 0.98), rgba(2, 24, 53, 0.98));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: 0 7px 15px rgba(0, 0, 0, 0.36);
+  pointer-events: none;
+}
+
+.status-info-tooltip::before {
+  content: "";
+  position: absolute;
+  left: var(--tooltip-arrow-left, 50%);
+  top: -6px;
+  width: 10px;
+  height: 10px;
+  border-top: 1.5px solid rgba(255, 218, 101, 0.96);
+  border-left: 1.5px solid rgba(255, 218, 101, 0.96);
+  background: #07467c;
+  transform: translateX(-50%) rotate(45deg);
+}
+
 .mode-switch-button {
   font: inherit;
   text-align: left;
