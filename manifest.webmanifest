@@ -1,0 +1,9 @@
+{
+  "name": "야구 몬스터 헌터",
+  "short_name": "야구 몬헌",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#03132b",
+  "theme_color": "#03132b"
+}

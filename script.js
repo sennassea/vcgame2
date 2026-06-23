@@ -1,4 +1,6 @@
 const STORAGE_KEY = 'baseballMonsterHunterSave';
+const BACKUP_STORAGE_KEY = `${STORAGE_KEY}Backup`;
+const SAVE_DATABASE_NAME = 'baseballMonsterHunterStorage';
 const MAX_GOLD = 50000;
 
 const PAGE_CONFIG = {
@@ -320,6 +322,13 @@ let activeBgmKey = '';
 let hasBgmInteraction = false;
 let timerAudioContext = null;
 let sfxTracks = null;
+let isAppPaused = false;
+let pausedBattleMode = '';
+let pauseStartedAt = 0;
+let lastVisibleScreen = 'start';
+let externalSavePromise = Promise.resolve();
+let externalSaveTimer = null;
+let pendingExternalSave = '';
 
 const BGM_SOURCES = {
   main: 'sounds/main-background.mp3',
@@ -348,7 +357,9 @@ function createAttackState() {
 
 function loadGameState() {
   try {
-    const savedData = localStorage.getItem(STORAGE_KEY);
+    const savedData =
+      localStorage.getItem(STORAGE_KEY) ??
+      localStorage.getItem(BACKUP_STORAGE_KEY);
 
     if (!savedData) {
       return cloneDefaultState();
@@ -409,10 +420,114 @@ function loadGameState() {
 }
 
 function saveGameState() {
+  const serializedState = JSON.stringify({
+    ...gameState,
+    _savedAt: Date.now(),
+  });
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
+    localStorage.setItem(STORAGE_KEY, serializedState);
+    localStorage.setItem(BACKUP_STORAGE_KEY, serializedState);
   } catch (error) {
     console.warn('저장 데이터를 저장하지 못했습니다.', error);
+  }
+  pendingExternalSave = serializedState;
+  window.clearTimeout(externalSaveTimer);
+  externalSaveTimer = window.setTimeout(flushExternalSave, 500);
+}
+
+function flushExternalSave() {
+  window.clearTimeout(externalSaveTimer);
+  externalSaveTimer = null;
+  if (!pendingExternalSave) return externalSavePromise;
+  const serializedState = pendingExternalSave;
+  pendingExternalSave = '';
+  externalSavePromise = externalSavePromise
+    .catch(() => {})
+    .then(() => persistExternalSave(serializedState));
+  return externalSavePromise;
+}
+
+function openSaveDatabase() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) {
+      resolve(null);
+      return;
+    }
+    const request = indexedDB.open(SAVE_DATABASE_NAME, 1);
+    request.onupgradeneeded = () => {
+      request.result.createObjectStore('saves');
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function persistExternalSave(serializedState) {
+  try {
+    const preferences = window.Capacitor?.Plugins?.Preferences;
+    if (preferences?.set) {
+      await preferences.set({ key: STORAGE_KEY, value: serializedState });
+    }
+  } catch (error) {
+    console.warn('네이티브 저장소 백업에 실패했습니다.', error);
+  }
+
+  try {
+    const database = await openSaveDatabase();
+    if (!database) return;
+    await new Promise((resolve, reject) => {
+      const transaction = database.transaction('saves', 'readwrite');
+      transaction.objectStore('saves').put(serializedState, STORAGE_KEY);
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error);
+    });
+    database.close();
+  } catch (error) {
+    console.warn('IndexedDB 백업에 실패했습니다.', error);
+  }
+}
+
+async function readExternalSave() {
+  try {
+    const preferences = window.Capacitor?.Plugins?.Preferences;
+    if (preferences?.get) {
+      const result = await preferences.get({ key: STORAGE_KEY });
+      if (result?.value) return result.value;
+    }
+  } catch (error) {
+    console.warn('네이티브 저장소를 읽지 못했습니다.', error);
+  }
+
+  try {
+    const database = await openSaveDatabase();
+    if (!database) return '';
+    const value = await new Promise((resolve, reject) => {
+      const transaction = database.transaction('saves', 'readonly');
+      const request = transaction.objectStore('saves').get(STORAGE_KEY);
+      request.onsuccess = () => resolve(request.result ?? '');
+      request.onerror = () => reject(request.error);
+    });
+    database.close();
+    return value;
+  } catch (error) {
+    console.warn('IndexedDB 저장소를 읽지 못했습니다.', error);
+    return '';
+  }
+}
+
+async function restoreExternalSaveIfNeeded() {
+  if (localStorage.getItem(STORAGE_KEY)) return false;
+  const serializedState = await readExternalSave();
+  if (!serializedState) return false;
+  try {
+    localStorage.setItem(STORAGE_KEY, serializedState);
+    localStorage.setItem(BACKUP_STORAGE_KEY, serializedState);
+    gameState = loadGameState();
+    attackState = createAttackState();
+    return true;
+  } catch (error) {
+    console.warn('백업 저장 데이터를 복구하지 못했습니다.', error);
+    return false;
   }
 }
 
@@ -1042,6 +1157,9 @@ function renderTutorialGuidance() {
   attackBubble?.classList.add('is-hidden');
   $$('.player-upgrade-button, .player-recruit-button, .players-section-tab, [data-mode-switch]')
     .forEach((element) => element.classList.remove('is-tutorial-target'));
+  $$('.player-management-card').forEach((card) => {
+    card.classList.remove('is-tutorial-card-target');
+  });
 
   const showPlayersGuide = (title, text) => {
     if ($('#playersTutorialBubbleTitle')) $('#playersTutorialBubbleTitle').textContent = title;
@@ -1055,14 +1173,18 @@ function renderTutorialGuidance() {
       '대표 타자를 강화하세요!',
       '타자를 레벨업하면 공격력이 올라갑니다. 지원받은 골드로 대표 타자를 한 번 강화해 공격 모드에 다시 도전해 보세요.'
     );
-    $('[data-upgrade-player="batter"]')?.classList.add('is-tutorial-target');
+    const target = $('[data-upgrade-player="batter"]');
+    target?.classList.add('is-tutorial-target');
+    target?.closest('.player-management-card')?.classList.add('is-tutorial-card-target');
   } else if (step === 'upgradePitcher') {
     playersScreen?.classList.add('is-upgrade-guided');
     showPlayersGuide(
       '대표 투수를 강화하세요!',
       '투수를 레벨업하면 Hit 확률이 올라갑니다. 대표 투수를 한 번 강화해 수비 모드에서 더 많은 골드를 획득해 보세요.'
     );
-    $('[data-upgrade-player="pitcher"]')?.classList.add('is-tutorial-target');
+    const target = $('[data-upgrade-player="pitcher"]');
+    target?.classList.add('is-tutorial-target');
+    target?.closest('.player-management-card')?.classList.add('is-tutorial-card-target');
   } else if (step === 'returnToGame') {
     playersScreen?.classList.add('is-return-game-guided');
     showPlayersGuide('경기로 돌아가요!', '강화가 끝났습니다. 하단의 경기 탭을 눌러 전투 화면으로 돌아가세요.');
@@ -1081,7 +1203,9 @@ function renderTutorialGuidance() {
       '1루수를 영입하세요!',
       '미해금 선수 중 맨 위에 있는 1루수를 영입해 시너지 조합을 준비해 보세요.'
     );
-    $('[data-recruit-position="first"]')?.classList.add('is-tutorial-target');
+    const target = $('[data-recruit-position="first"]');
+    target?.classList.add('is-tutorial-target');
+    target?.closest('.player-management-card')?.classList.add('is-tutorial-card-target');
   } else if (step === 'openSynergyTab') {
     playersScreen?.classList.add('is-synergy-tab-guided');
     showPlayersGuide('시너지를 확인하세요!', '상단의 시너지 탭을 눌러 새로 영입한 선수와의 조합을 확인해 보세요.');
@@ -1101,6 +1225,7 @@ function showScreen(screenName) {
   playersScreen?.classList.toggle('is-hidden', screenName !== 'players');
   attackScreen?.classList.toggle('is-hidden', screenName !== 'attack');
   settingsScreen?.classList.toggle('is-hidden', screenName !== 'settings');
+  lastVisibleScreen = screenName;
   if (screenName !== 'start') hideQuickSettings();
 
   if (screenName !== 'attack') {
@@ -2311,6 +2436,12 @@ function startDefenseMode() {
   showScreen('attack');
   renderDefenseScreen();
 
+  resumeDefenseRuntime();
+}
+
+function resumeDefenseRuntime() {
+  if (isAppPaused || defenseLoopId) return;
+  defenseState.isRunning = true;
   performDefenseCycle();
   defenseLoopId = window.setInterval(performDefenseCycle, DEFENSE_CONFIG.pitchCycleMs);
 }
@@ -2385,28 +2516,38 @@ function startAttackTutorial() {
   renderAttackScreen();
 
   attackState.isRunning = true;
+  resumeAttackRuntime();
+}
 
+function runAttackTimerTick() {
+  if (!attackState.isRunning || attackState.isCleared || isAppPaused) return;
+
+  attackState.timeLeft -= 1;
+  renderAttackScreen();
+
+  if (attackState.timeLeft >= 1 && attackState.timeLeft <= 5) {
+    const warningTime = attackState.timeLeft;
+    if (attackTimerBeepFrameId) {
+      window.cancelAnimationFrame(attackTimerBeepFrameId);
+    }
+    attackTimerBeepFrameId = window.requestAnimationFrame(() => {
+      attackTimerBeepFrameId = null;
+      if (!attackState.isRunning || attackState.timeLeft !== warningTime) return;
+      playAttackTimerBeep(warningTime);
+    });
+  }
+
+  if (attackState.timeLeft <= 0 && attackState.hp > 0) {
+    failAttackTutorial();
+  }
+}
+
+function resumeAttackRuntime() {
+  if (isAppPaused || attackState.isCleared || attackTimerId || attackLoopId) return;
+  const config = getAttackConfigForStage(gameState.currentStage);
+  attackState.isRunning = true;
   attackTimerId = window.setInterval(() => {
-    if (!attackState.isRunning || attackState.isCleared) return;
-
-    attackState.timeLeft -= 1;
-    renderAttackScreen();
-
-    if (attackState.timeLeft >= 1 && attackState.timeLeft <= 5) {
-      const warningTime = attackState.timeLeft;
-      if (attackTimerBeepFrameId) {
-        window.cancelAnimationFrame(attackTimerBeepFrameId);
-      }
-      attackTimerBeepFrameId = window.requestAnimationFrame(() => {
-        attackTimerBeepFrameId = null;
-        if (!attackState.isRunning || attackState.timeLeft !== warningTime) return;
-        playAttackTimerBeep(warningTime);
-      });
-    }
-
-    if (attackState.timeLeft <= 0 && attackState.hp > 0) {
-      failAttackTutorial();
-    }
+    runAttackTimerTick();
   }, 1000);
 
   performAttackCycle();
@@ -3077,10 +3218,181 @@ function initUiSoundEffects() {
   );
 }
 
-function initGame() {
+function pauseAppRuntime() {
+  if (isAppPaused) return;
+  isAppPaused = true;
+  pauseStartedAt = Date.now();
+  pausedBattleMode = '';
+
+  if (attackState.isRunning && !attackState.isCleared) {
+    pausedBattleMode = 'attack';
+    stopAttackTutorial();
+  } else if (defenseState.isRunning) {
+    pausedBattleMode = 'defense';
+    stopDefenseMode();
+  }
+
+  Object.values(bgmTracks ?? {}).forEach((audio) => audio.pause());
+  timerAudioContext?.suspend().catch(() => {});
+  saveGameState();
+  flushExternalSave();
+}
+
+function resumeAppRuntime() {
+  if (!isAppPaused) return;
+  isAppPaused = false;
+  const modeToResume = pausedBattleMode;
+  pausedBattleMode = '';
+
+  if (modeToResume === 'attack' && lastVisibleScreen === 'attack') {
+    resumeAttackRuntime();
+  } else if (modeToResume === 'defense' && lastVisibleScreen === 'attack') {
+    resumeDefenseRuntime();
+  }
+
+  if (timerAudioContext?.state === 'suspended') {
+    timerAudioContext.resume().catch(() => {});
+  }
+  syncBackgroundMusic();
+  pauseStartedAt = 0;
+}
+
+function initAppLifecycle() {
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) pauseAppRuntime();
+    else resumeAppRuntime();
+  });
+  window.addEventListener('pagehide', pauseAppRuntime);
+  window.addEventListener('pageshow', resumeAppRuntime);
+
+  const capacitorApp = window.Capacitor?.Plugins?.App;
+  capacitorApp?.addListener?.('appStateChange', ({ isActive }) => {
+    if (isActive) resumeAppRuntime();
+    else pauseAppRuntime();
+  });
+}
+
+function closeTopmostOverlay() {
+  const overlaySelectors = [
+    '#goldCapModal',
+    '#resetConfirmModal',
+    '#modeSwitchModal',
+    '#representativeConfirmModal',
+    '#renamePlayerModal',
+    '#playerActionModal',
+    '#recruitSetupModal',
+    '#recruitConfirmModal',
+    '#betaCompleteModal',
+    '#synergyIntroModal',
+    '#tutorialCompleteModal',
+    '#defenseSupportModal',
+    '#stageFailModal',
+    '#stageClearModal',
+    '#quickSettingsModal',
+  ];
+  const overlay = overlaySelectors
+    .map((selector) => $(selector))
+    .find((element) => element && !element.classList.contains('is-hidden'));
+  if (!overlay) return false;
+  overlay.classList.add('is-hidden');
+  return true;
+}
+
+function handleAppBack() {
+  hideStatusInfoTooltip();
+  hideDefenseRuleTooltip();
+  if (closeTopmostOverlay()) return true;
+
+  if (lastVisibleScreen === 'settings') {
+    if (settingsReturnScreen === 'attack') {
+      if (gameState.currentMode === 'defense') startDefenseMode();
+      else startAttackTutorial();
+    } else {
+      showScreen(settingsReturnScreen);
+    }
+    return true;
+  }
+  if (lastVisibleScreen === 'players' || lastVisibleScreen === 'representative') {
+    if (gameState.tutorialFlags.representativeBatterSet) {
+      if (gameState.currentMode === 'defense') startDefenseMode();
+      else startAttackTutorial();
+    } else {
+      showScreen('start');
+    }
+    return true;
+  }
+  if (lastVisibleScreen === 'attack') {
+    showScreen('start');
+    return true;
+  }
+  return false;
+}
+
+function initBackNavigation() {
+  history.replaceState({ gameRoot: true }, '');
+  history.pushState({ gameBackGuard: true }, '');
+  window.addEventListener('popstate', () => {
+    const handled = handleAppBack();
+    if (handled || lastVisibleScreen !== 'start') {
+      history.pushState({ gameBackGuard: true }, '');
+    }
+  });
+
+  const capacitorApp = window.Capacitor?.Plugins?.App;
+  capacitorApp?.addListener?.('backButton', () => {
+    if (!handleAppBack()) capacitorApp.exitApp?.();
+  });
+}
+
+function updateViewportMetrics() {
+  const viewport = window.visualViewport;
+  const height = viewport?.height ?? window.innerHeight;
+  document.documentElement.style.setProperty('--app-height', `${Math.round(height)}px`);
+  const keyboardOpen = Boolean(viewport && window.innerHeight - viewport.height > 150);
+  document.body.classList.toggle('is-keyboard-open', keyboardOpen);
+}
+
+function initMobileViewport() {
+  updateViewportMetrics();
+  window.addEventListener('resize', updateViewportMetrics);
+  window.addEventListener('orientationchange', updateViewportMetrics);
+  window.visualViewport?.addEventListener('resize', updateViewportMetrics);
+  window.visualViewport?.addEventListener('scroll', updateViewportMetrics);
+
+  document.addEventListener('focusin', (event) => {
+    if (!event.target.matches('input[type="text"]')) return;
+    window.setTimeout(() => {
+      event.target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 250);
+  });
+}
+
+function initPortraitOrientation() {
+  const lockPortrait = () => {
+    screen.orientation?.lock?.('portrait').catch(() => {});
+  };
+  document.addEventListener('pointerdown', lockPortrait, { once: true });
+}
+
+function applyAssetLoadingHints() {
+  $$('img').forEach((image) => {
+    image.decoding = 'async';
+    if (!image.closest('#startScreen') && !image.closest('#attackScreen')) {
+      image.loading = 'lazy';
+    }
+  });
+}
+
+async function initGame() {
+  await restoreExternalSaveIfNeeded();
   initBackgroundMusic();
   initUiSoundEffects();
   initStatusInfoTooltips();
+  initAppLifecycle();
+  initBackNavigation();
+  initMobileViewport();
+  initPortraitOrientation();
+  applyAssetLoadingHints();
   initStartScreen();
   initRepresentativeScreen();
   initAttackScreen();
@@ -3113,4 +3425,6 @@ window.BaseballMonsterHunter = {
   },
 };
 
-initGame();
+initGame().catch((error) => {
+  console.error('게임 초기화에 실패했습니다.', error);
+});

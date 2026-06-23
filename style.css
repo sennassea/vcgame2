@@ -5,10 +5,13 @@
 }
 
 :root {
-  --screen-width: min(100vw, calc(100vh * 9 / 16), 520px);
-  --screen-height: min(100vh, calc(100vw * 16 / 9), 924px);
+  --app-height: 100vh;
+  --screen-width: min(100vw, calc(var(--app-height) * 9 / 16), 520px);
+  --screen-height: min(var(--app-height), calc(100vw * 16 / 9), 924px);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
   --status-height: 66px;
   --nav-height: 92px;
   --gold-line: rgba(242, 190, 94, 0.9);
@@ -21,8 +24,10 @@
 html,
 body {
   width: 100%;
-  min-height: 100%;
+  height: var(--app-height);
+  min-height: var(--app-height);
   overflow: hidden;
+  overscroll-behavior: none;
   background: #03132b;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
   color: #fff;
@@ -41,7 +46,7 @@ button {
 .game-shell {
   position: relative;
   width: 100vw;
-  height: 100vh;
+  height: var(--app-height);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -959,10 +964,26 @@ button {
   box-shadow: 0 0 15px rgba(255, 220, 79, 0.8);
 }
 
-.players-screen.is-upgrade-guided .player-management-card:has([data-upgrade-player].is-tutorial-target),
-.players-screen.is-recruit-guided .player-management-card:has([data-recruit-position="first"].is-tutorial-target) {
+.player-management-card.is-tutorial-card-target {
   opacity: 1;
   filter: none;
+}
+
+body.is-keyboard-open .bottom-navigation {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.is-keyboard-open .representative-scroll-area,
+body.is-keyboard-open .players-scroll-area,
+body.is-keyboard-open .settings-scroll-area {
+  padding-bottom: 24px;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --app-height: 100dvh;
+  }
 }
 
 .players-screen.is-return-game-guided .bottom-nav-button:not([data-target="game"]):not([data-target="settings"]) {
