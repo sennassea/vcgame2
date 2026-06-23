@@ -1,10 +1,11 @@
-const CACHE_VERSION = 'baseball-monster-hunter-v5';
+const CACHE_VERSION = 'baseball-monster-hunter-v6-web-original';
 const CACHE_PREFIX = 'baseball-monster-hunter-';
 const APP_SHELL = [
   './',
   './index.html',
   './style.css',
   './script.js',
+  './pwa-register.js',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',

@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#03132b" />
   <meta name="color-scheme" content="light only" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <title>야구 몬스터 헌터</title>
@@ -145,7 +142,7 @@
               <strong id="summaryName">이름 입력</strong>
             </div>
 
-            <input id="playerNameInput" class="player-name-input" type="text" maxlength="8" autocomplete="off" enterkeyhint="done" placeholder="이름을 입력하세요" aria-label="대표 타자 이름 입력" />
+            <input id="playerNameInput" class="player-name-input" type="text" maxlength="8" autocomplete="off" placeholder="이름을 입력하세요" aria-label="대표 타자 이름 입력" />
           </div>
 
           <button id="nameSetupButton" class="name-setup-button" type="button" aria-label="대표 타자 설정 완료">
@@ -300,7 +297,7 @@
 
           <div class="recruit-name-setup">
             <label for="recruitPlayerNameInput">선수 이름</label>
-            <input id="recruitPlayerNameInput" type="text" maxlength="8" autocomplete="off" enterkeyhint="done" placeholder="이름을 입력하세요" />
+            <input id="recruitPlayerNameInput" type="text" maxlength="8" autocomplete="off" placeholder="이름을 입력하세요" />
             <button id="recruitPlayerSetupButton" type="button">설정 <span>100G</span></button>
           </div>
         </div>
@@ -336,7 +333,7 @@
         <div class="recruit-confirm-card">
           <p class="recruit-modal-kicker">PLAYER NAME</p>
           <h2 id="renamePlayerTitle">이름 변경</h2>
-          <input id="renamePlayerInput" class="modal-name-input" type="text" maxlength="8" autocomplete="off" enterkeyhint="done" placeholder="이름을 입력하세요" />
+          <input id="renamePlayerInput" class="modal-name-input" type="text" maxlength="8" autocomplete="off" placeholder="이름을 입력하세요" />
           <div class="recruit-confirm-actions">
             <button id="confirmRenamePlayerButton" class="recruit-confirm-button is-yes" type="button">변경</button>
             <button id="cancelRenamePlayerButton" class="recruit-confirm-button is-no" type="button">아니오</button>
@@ -633,24 +630,6 @@
   </main>
 
   <script src="script.js"></script>
-  <script>
-    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      window.addEventListener('load', () => {
-        let isReloadingForUpdate = false;
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          if (isReloadingForUpdate) return;
-          isReloadingForUpdate = true;
-          window.location.reload();
-        });
-
-        navigator.serviceWorker
-          .register('./sw.js')
-          .then((registration) => registration.update())
-          .catch((error) => {
-            console.warn('서비스 워커 등록에 실패했습니다.', error);
-          });
-      });
-    }
-  </script>
+  <script src="pwa-register.js"></script>
 </body>
 </html>
