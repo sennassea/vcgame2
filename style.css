@@ -2313,6 +2313,15 @@ button {
   margin: 11px 0 8px;
 }
 
+.track-volume-control.is-sfx {
+  border: 1px solid rgba(255, 216, 77, 0.42);
+  background: rgba(67, 45, 0, 0.28);
+}
+
+.track-volume-control.is-sfx + .settings-option-button {
+  margin-top: 14px;
+}
+
 .settings-option-button,
 .settings-wide-button {
   width: 100%;
@@ -3098,7 +3107,6 @@ button {
 .battle-batter,
 .battle-monster {
   position: absolute;
-  z-index: 3;
   display: block;
   height: auto;
   user-select: none;
@@ -3107,6 +3115,7 @@ button {
 }
 
 .battle-batter {
+  z-index: 4;
   left: 18px;
   bottom: 8px;
   width: clamp(128px, 33vw, 173px);
@@ -3128,6 +3137,7 @@ button {
 }
 
 .battle-monster {
+  z-index: 2;
   right: 24px;
   bottom: 12px;
   width: clamp(123px, 31.5vw, 165px);

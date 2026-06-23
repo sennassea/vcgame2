@@ -105,12 +105,13 @@ const DEFAULT_GAME_STATE = {
     right: { unlocked: false, name: '', level: 1, attack: 10 },
   },
   settings: {
-    volume: 70,
+    volume: 20,
     bgmVolumes: {
-      main: 70,
-      attack: 70,
-      defense: 70,
+      main: 20,
+      attack: 20,
+      defense: 20,
     },
+    sfxVolume: 70,
     muted: false,
   },
   claimedStageRewards: {},
@@ -196,7 +197,7 @@ const STAGE_CONFIGS = {
   6: {
     monsterName: 'A 몬스터',
     monsterLevel: 6,
-    maxHp: 2000,
+    maxHp: 2500,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -208,7 +209,7 @@ const STAGE_CONFIGS = {
   7: {
     monsterName: 'A 몬스터',
     monsterLevel: 7,
-    maxHp: 2500,
+    maxHp: 4000,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -220,7 +221,7 @@ const STAGE_CONFIGS = {
   8: {
     monsterName: 'A 몬스터',
     monsterLevel: 8,
-    maxHp: 3000,
+    maxHp: 6000,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -232,7 +233,7 @@ const STAGE_CONFIGS = {
   9: {
     monsterName: 'A 몬스터',
     monsterLevel: 9,
-    maxHp: 3500,
+    maxHp: 8000,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -245,7 +246,7 @@ const STAGE_CONFIGS = {
     monsterName: 'A 몬스터 BOSS',
     monsterLevel: 10,
     isBoss: true,
-    maxHp: 5000,
+    maxHp: 10000,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -316,11 +317,17 @@ let bgmTracks = null;
 let activeBgmKey = '';
 let hasBgmInteraction = false;
 let timerAudioContext = null;
+let sfxTracks = null;
 
 const BGM_SOURCES = {
   main: 'sounds/main-background.mp3',
   attack: 'sounds/attack-mode.mp3',
   defense: 'sounds/defense-mode.mp3',
+};
+
+const SFX_SOURCES = {
+  pitch: 'sounds/pitch-throw.mp3',
+  swing: 'sounds/bat-swing.mp3',
 };
 
 function cloneDefaultState() {
@@ -699,6 +706,8 @@ function stopAttackTutorial() {
 
 function playAttackTimerBeep(timeLeft) {
   if (gameState.settings.muted || timeLeft < 1 || timeLeft > 5) return;
+  const sfxVolume = getSfxVolume();
+  if (sfxVolume <= 0) return;
 
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextClass) return;
@@ -713,8 +722,7 @@ function playAttackTimerBeep(timeLeft) {
   const isFinalBeep = timeLeft === 1;
   const startTime = context.currentTime;
   const duration = isFinalBeep ? 0.82 : 0.18;
-  const attackVolume = getStoredBgmVolume('attack') / 100;
-  const peakVolume = Math.max(0.025, attackVolume * 0.18);
+  const peakVolume = Math.max(0.08, sfxVolume * 0.38);
 
   oscillator.type = 'sine';
   oscillator.frequency.setValueAtTime(isFinalBeep ? 1040 : 880, startTime);
@@ -726,6 +734,135 @@ function playAttackTimerBeep(timeLeft) {
   gain.connect(context.destination);
   oscillator.start(startTime);
   oscillator.stop(startTime + duration + 0.02);
+}
+
+function getStoredSfxVolume() {
+  return Math.max(
+    0,
+    Math.min(100, Math.floor(normalizeNumber(gameState.settings.sfxVolume, 70)))
+  );
+}
+
+function getSfxVolume() {
+  if (gameState.settings.muted) return 0;
+  return Math.min(1, (getStoredSfxVolume() / 100) * 1.2);
+}
+
+function playFileSfx(key) {
+  const source = sfxTracks?.[key];
+  const volume = getSfxVolume();
+  if (!source || volume <= 0) return;
+
+  const audio = source.cloneNode();
+  audio.volume = volume;
+  audio.currentTime = 0;
+  audio.play().catch(() => {});
+  window.setTimeout(() => {
+    audio.pause();
+    audio.currentTime = 0;
+  }, 1400);
+}
+
+function createSfxNoise(context, startTime, duration, volume, filterFrequency = 1000) {
+  const frameCount = Math.max(1, Math.floor(context.sampleRate * duration));
+  const buffer = context.createBuffer(1, frameCount, context.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let index = 0; index < frameCount; index += 1) {
+    data[index] = Math.random() * 2 - 1;
+  }
+
+  const source = context.createBufferSource();
+  const filter = context.createBiquadFilter();
+  const gain = context.createGain();
+  source.buffer = buffer;
+  filter.type = 'bandpass';
+  filter.frequency.setValueAtTime(filterFrequency, startTime);
+  filter.Q.value = 0.8;
+  gain.gain.setValueAtTime(volume, startTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+  source.connect(filter);
+  filter.connect(gain);
+  gain.connect(context.destination);
+  source.start(startTime);
+}
+
+function playSynthesizedSfx(type) {
+  const volume = getSfxVolume();
+  if (volume <= 0) return;
+  const resultVolume = Math.min(1, volume * 1.65);
+
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
+  timerAudioContext ??= new AudioContextClass();
+  const context = timerAudioContext;
+  if (context.state === 'suspended') context.resume().catch(() => {});
+
+  const startTime = context.currentTime;
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+
+  if (type === 'hit') {
+    oscillator.type = 'triangle';
+    oscillator.frequency.setValueAtTime(620, startTime);
+    oscillator.frequency.exponentialRampToValueAtTime(170, startTime + 0.14);
+    gain.gain.setValueAtTime(resultVolume, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.18);
+    createSfxNoise(context, startTime, 0.16, resultVolume * 0.92, 1900);
+    oscillator.start(startTime);
+    oscillator.stop(startTime + 0.2);
+    return;
+  }
+
+  if (type === 'monster-hit') {
+    oscillator.type = 'square';
+    oscillator.frequency.setValueAtTime(190, startTime);
+    oscillator.frequency.exponentialRampToValueAtTime(58, startTime + 0.45);
+    gain.gain.setValueAtTime(resultVolume * 0.75, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.55);
+    createSfxNoise(context, startTime, 0.4, resultVolume * 0.82, 850);
+    oscillator.start(startTime);
+    oscillator.stop(startTime + 0.58);
+    return;
+  }
+
+  if (type === 'click') {
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(330, startTime);
+    oscillator.frequency.exponentialRampToValueAtTime(190, startTime + 0.11);
+    gain.gain.setValueAtTime(resultVolume * 0.24, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.14);
+    oscillator.start(startTime);
+    oscillator.stop(startTime + 0.16);
+    return;
+  }
+
+  if (type === 'celebration') {
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(523.25, startTime);
+    oscillator.frequency.setValueAtTime(659.25, startTime + 0.18);
+    oscillator.frequency.setValueAtTime(783.99, startTime + 0.36);
+    oscillator.frequency.setValueAtTime(1046.5, startTime + 0.54);
+    gain.gain.setValueAtTime(resultVolume * 0.28, startTime);
+    gain.gain.setValueAtTime(resultVolume * 0.34, startTime + 0.18);
+    gain.gain.setValueAtTime(resultVolume * 0.4, startTime + 0.36);
+    gain.gain.setValueAtTime(resultVolume * 0.48, startTime + 0.54);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.92);
+    createSfxNoise(context, startTime + 0.5, 0.42, resultVolume * 0.18, 2400);
+    oscillator.start(startTime);
+    oscillator.stop(startTime + 0.94);
+    return;
+  }
+
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(440, startTime);
+  oscillator.frequency.linearRampToValueAtTime(660, startTime + 0.75);
+  gain.gain.setValueAtTime(resultVolume * 0.3, startTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 1.2);
+  createSfxNoise(context, startTime, 1.2, resultVolume * 0.62, 1350);
+  oscillator.start(startTime);
+  oscillator.stop(startTime + 1.22);
 }
 
 function clearDefenseTimeouts() {
@@ -1379,6 +1516,7 @@ function selectPlayersSection(sectionName) {
   if (tutorialStep === 'openSynergyTab' && isSynergy) {
     setTutorialStep('tutorialCompletePending');
     $('#tutorialCompleteModal')?.classList.remove('is-hidden');
+    playSynthesizedSfx('celebration');
   }
 }
 
@@ -1996,6 +2134,7 @@ function resolveDefensePitch() {
 
   if (!isMonsterHit) {
     setMonsterImage('hit');
+    playSynthesizedSfx('hit');
     addDefenseGold(rewards.hit);
     showDefenseResult('Hit!', `+${rewards.hit}G`, 'hit');
 
@@ -2011,6 +2150,7 @@ function resolveDefensePitch() {
 
   if (isCatch) {
     setMonsterImage('crying');
+    playSynthesizedSfx('catch');
     addDefenseGold(rewards.catch);
     showDefenseResult('Catch!', `+${rewards.catch}G`, 'catch');
     completeDefensePitchTutorialStep();
@@ -2018,6 +2158,7 @@ function resolveDefensePitch() {
   }
 
   setMonsterImage('proud');
+  playSynthesizedSfx('monster-hit');
   addDefenseGold(-1);
   showDefenseResult('Monster Hit', '-1G', 'monster-hit');
   completeDefensePitchTutorialStep();
@@ -2038,6 +2179,7 @@ function performDefenseCycle() {
   const frame3TimeoutId = window.setTimeout(() => {
     if (!defenseState.isRunning) return;
     setPitcherFrame(2);
+    playFileSfx('pitch');
   }, DEFENSE_CONFIG.frame3DelayMs);
 
   const resultTimeoutId = window.setTimeout(() => {
@@ -2121,6 +2263,7 @@ function performAttackCycle() {
   const frame3TimeoutId = window.setTimeout(() => {
     if (!attackState.isRunning || attackState.isCleared) return;
     setBatterFrame(2);
+    playFileSfx('swing');
     applyTutorialDamage();
   }, config.frame3DelayMs);
 
@@ -2232,6 +2375,7 @@ function showStageClearModal() {
   }
 
   $('#stageClearModal')?.classList.remove('is-hidden');
+  playSynthesizedSfx('celebration');
 }
 
 function hideStageClearModal() {
@@ -2559,7 +2703,7 @@ function initAttackScreen() {
 function getBgmVolume(trackKey) {
   if (gameState.settings.muted) return 0;
   const volume = getStoredBgmVolume(trackKey);
-  return volume / 100;
+  return (volume / 100) * 0.65;
 }
 
 function getDesiredBgmKey() {
@@ -2611,6 +2755,13 @@ function initBackgroundMusic() {
       return [key, audio];
     })
   );
+  sfxTracks = Object.fromEntries(
+    Object.entries(SFX_SOURCES).map(([key, source]) => {
+      const audio = new Audio(source);
+      audio.preload = 'auto';
+      return [key, audio];
+    })
+  );
   syncBgmVolume();
 
   const unlock = () => {
@@ -2635,6 +2786,11 @@ function renderSettingsScreen() {
     if (slider) slider.value = String(volume);
     if (value) value.textContent = muted ? '음소거' : `${volume}%`;
   });
+  const sfxVolume = getStoredSfxVolume();
+  if ($('#sfxVolumeSlider')) $('#sfxVolumeSlider').value = String(sfxVolume);
+  if ($('#sfxVolumeValue')) {
+    $('#sfxVolumeValue').textContent = muted ? '음소거' : `${sfxVolume}%`;
+  }
   if ($('#muteIcon')) $('#muteIcon').textContent = muted ? '🔇' : '🔊';
   if ($('#muteLabel')) $('#muteLabel').textContent = muted ? '음소거 해제' : '음소거';
   renderQuickSettings();
@@ -2659,19 +2815,27 @@ function hideQuickSettings() {
 function getStoredBgmVolume(trackKey) {
   return Math.max(
     0,
-    Math.min(100, Math.floor(normalizeNumber(gameState.settings.bgmVolumes?.[trackKey], 70)))
+    Math.min(100, Math.floor(normalizeNumber(gameState.settings.bgmVolumes?.[trackKey], 20)))
   );
 }
 
 function updateBgmVolume(trackKey, value) {
   if (!Object.hasOwn(BGM_SOURCES, trackKey)) return;
-  const volume = Math.max(0, Math.min(100, Math.floor(normalizeNumber(value, 70))));
+  const volume = Math.max(0, Math.min(100, Math.floor(normalizeNumber(value, 20))));
   gameState.settings.bgmVolumes ??= {};
   gameState.settings.bgmVolumes[trackKey] = volume;
   if (volume > 0) gameState.settings.muted = false;
   saveGameState();
   startBackgroundMusic().catch(() => {});
   syncBgmVolume();
+  renderSettingsScreen();
+}
+
+function updateSfxVolume(value) {
+  const volume = Math.max(0, Math.min(100, Math.floor(normalizeNumber(value, 70))));
+  gameState.settings.sfxVolume = volume;
+  if (volume > 0) gameState.settings.muted = false;
+  saveGameState();
   renderSettingsScreen();
 }
 
@@ -2716,6 +2880,9 @@ function initSettingsScreen() {
     $(`#${key}VolumeSlider`)?.addEventListener('input', (event) => {
       updateBgmVolume(key, event.target.value);
     });
+  });
+  $('#sfxVolumeSlider')?.addEventListener('input', (event) => {
+    updateSfxVolume(event.target.value);
   });
   $('#muteToggleButton')?.addEventListener('click', toggleMute);
   $('#resetGameButton')?.addEventListener('click', () => {
@@ -2794,8 +2961,21 @@ function initBottomNavigation() {
   renderNavigationLocks();
 }
 
+function initUiSoundEffects() {
+  document.addEventListener(
+    'click',
+    (event) => {
+      const button = event.target.closest('button');
+      if (!button || button.disabled) return;
+      playSynthesizedSfx('click');
+    },
+    true
+  );
+}
+
 function initGame() {
   initBackgroundMusic();
+  initUiSoundEffects();
   initStartScreen();
   initRepresentativeScreen();
   initAttackScreen();

@@ -39,8 +39,8 @@
           <h2 id="quickSettingsTitle">소리 설정</h2>
           <div class="quick-volume-row">
             <span class="quick-volume-label">메인 음악</span>
-            <input id="quickVolumeSlider" class="volume-slider" type="range" min="0" max="100" value="70" aria-label="메인 배경 음악 음량" />
-            <strong id="quickVolumeValue">70%</strong>
+            <input id="quickVolumeSlider" class="volume-slider" type="range" min="0" max="100" value="20" aria-label="메인 배경 음악 음량" />
+            <strong id="quickVolumeValue">20%</strong>
           </div>
           <button id="quickMuteToggleButton" class="settings-option-button" type="button">
             <span id="quickMuteIcon" aria-hidden="true">🔊</span>
@@ -387,19 +387,23 @@
 
         <section class="settings-card">
           <div class="settings-card-heading">
-            <div><p>SOUND</p><h2>배경 음악 음량</h2></div>
+            <div><p>SOUND</p><h2>음량 조절</h2></div>
           </div>
           <div class="track-volume-control">
-            <div><label for="mainVolumeSlider">메인 배경 음악</label><strong id="mainVolumeValue">70%</strong></div>
-            <input id="mainVolumeSlider" class="volume-slider" type="range" min="0" max="100" value="70" aria-label="메인 배경 음악 음량" />
+            <div><label for="mainVolumeSlider">메인 배경 음악</label><strong id="mainVolumeValue">20%</strong></div>
+            <input id="mainVolumeSlider" class="volume-slider" type="range" min="0" max="100" value="20" aria-label="메인 배경 음악 음량" />
           </div>
           <div class="track-volume-control">
-            <div><label for="attackVolumeSlider">공격 모드 음악</label><strong id="attackVolumeValue">70%</strong></div>
-            <input id="attackVolumeSlider" class="volume-slider" type="range" min="0" max="100" value="70" aria-label="공격 모드 배경 음악 음량" />
+            <div><label for="attackVolumeSlider">공격 모드 음악</label><strong id="attackVolumeValue">20%</strong></div>
+            <input id="attackVolumeSlider" class="volume-slider" type="range" min="0" max="100" value="20" aria-label="공격 모드 배경 음악 음량" />
           </div>
           <div class="track-volume-control">
-            <div><label for="defenseVolumeSlider">수비 모드 음악</label><strong id="defenseVolumeValue">70%</strong></div>
-            <input id="defenseVolumeSlider" class="volume-slider" type="range" min="0" max="100" value="70" aria-label="수비 모드 배경 음악 음량" />
+            <div><label for="defenseVolumeSlider">수비 모드 음악</label><strong id="defenseVolumeValue">20%</strong></div>
+            <input id="defenseVolumeSlider" class="volume-slider" type="range" min="0" max="100" value="20" aria-label="수비 모드 배경 음악 음량" />
+          </div>
+          <div class="track-volume-control is-sfx">
+            <div><label for="sfxVolumeSlider">효과음</label><strong id="sfxVolumeValue">70%</strong></div>
+            <input id="sfxVolumeSlider" class="volume-slider" type="range" min="0" max="100" value="70" aria-label="전체 효과음 음량" />
           </div>
           <button id="muteToggleButton" class="settings-option-button" type="button">
             <span id="muteIcon" aria-hidden="true">🔊</span>
