@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'baseballMonsterHunterSave';
-const MAX_GOLD = 10000;
+const MAX_GOLD = 50000;
 
 const PAGE_CONFIG = {
   // 다음 화면을 별도 파일로 만들면 null 대신 실제 파일명을 넣으면 됩니다.
@@ -160,7 +160,7 @@ const STAGE_CONFIGS = {
   3: {
     monsterName: 'A 몬스터',
     monsterLevel: 3,
-    maxHp: 1000,
+    maxHp: 700,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -172,7 +172,7 @@ const STAGE_CONFIGS = {
   4: {
     monsterName: 'A 몬스터',
     monsterLevel: 4,
-    maxHp: 1600,
+    maxHp: 1000,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -184,7 +184,7 @@ const STAGE_CONFIGS = {
   5: {
     monsterName: 'A 몬스터',
     monsterLevel: 5,
-    maxHp: 2300,
+    maxHp: 1500,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -196,7 +196,7 @@ const STAGE_CONFIGS = {
   6: {
     monsterName: 'A 몬스터',
     monsterLevel: 6,
-    maxHp: 3200,
+    maxHp: 2000,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -208,7 +208,7 @@ const STAGE_CONFIGS = {
   7: {
     monsterName: 'A 몬스터',
     monsterLevel: 7,
-    maxHp: 4300,
+    maxHp: 2500,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -220,7 +220,7 @@ const STAGE_CONFIGS = {
   8: {
     monsterName: 'A 몬스터',
     monsterLevel: 8,
-    maxHp: 5600,
+    maxHp: 3000,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -232,7 +232,7 @@ const STAGE_CONFIGS = {
   9: {
     monsterName: 'A 몬스터',
     monsterLevel: 9,
-    maxHp: 7200,
+    maxHp: 3500,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -245,7 +245,7 @@ const STAGE_CONFIGS = {
     monsterName: 'A 몬스터 BOSS',
     monsterLevel: 10,
     isBoss: true,
-    maxHp: 10500,
+    maxHp: 5000,
     timeLimit: 30,
     attackDamage: 10,
     criticalChance: 0.05,
@@ -315,6 +315,7 @@ let defenseState = { isRunning: false };
 let bgmTracks = null;
 let activeBgmKey = '';
 let hasBgmInteraction = false;
+let timerAudioContext = null;
 
 const BGM_SOURCES = {
   main: 'sounds/main-background.mp3',
@@ -357,6 +358,9 @@ function loadGameState() {
       ...defaultState,
       ...parsedData,
       gold: Math.max(0, Math.min(MAX_GOLD, Math.floor(normalizeNumber(parsedData.gold)))),
+      goldCapNotified:
+        Boolean(parsedData.goldCapNotified) &&
+        normalizeNumber(parsedData.gold) >= MAX_GOLD,
       representativePlayer: {
         ...defaultState.representativePlayer,
         ...(parsedData.representativePlayer ?? {}),
@@ -419,6 +423,10 @@ function showGoldCapModal() {
 function setGoldAmount(value, { notifyCap = true } = {}) {
   const previousGold = gameState.gold;
   gameState.gold = Math.max(0, Math.min(MAX_GOLD, Math.floor(normalizeNumber(value))));
+
+  if (gameState.gold < MAX_GOLD) {
+    gameState.goldCapNotified = false;
+  }
 
   if (
     notifyCap &&
@@ -488,9 +496,13 @@ function getStageClearReward(stage) {
 function getDefenseRewards() {
   const stageMultiplier = 1 + (Math.max(1, gameState.currentStage) - 1) * 0.15;
   const batterySynergyMultiplier = 1 + getSynergyEffectValue('battery') / 100;
+  const pitcherLevelBonus = Math.max(
+    1,
+    Math.floor(normalizeNumber(gameState.representativePlayer.pitcherLevel, 1))
+  );
 
   return {
-    hit: Math.round(10 * stageMultiplier * batterySynergyMultiplier),
+    hit: Math.round(10 * stageMultiplier * batterySynergyMultiplier) + pitcherLevelBonus,
     catch: Math.round(20 * stageMultiplier * batterySynergyMultiplier),
   };
 }
@@ -683,6 +695,37 @@ function stopAttackTutorial() {
   }
 
   clearAttackTimeouts();
+}
+
+function playAttackTimerBeep(timeLeft) {
+  if (gameState.settings.muted || timeLeft < 1 || timeLeft > 5) return;
+
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
+
+  timerAudioContext ??= new AudioContextClass();
+  const context = timerAudioContext;
+  if (context.state === 'suspended') {
+    context.resume().catch(() => {});
+  }
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  const isFinalBeep = timeLeft === 1;
+  const startTime = context.currentTime;
+  const duration = isFinalBeep ? 0.82 : 0.18;
+  const attackVolume = getStoredBgmVolume('attack') / 100;
+  const peakVolume = Math.max(0.025, attackVolume * 0.18);
+
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(isFinalBeep ? 1040 : 880, startTime);
+  gain.gain.setValueAtTime(0.0001, startTime);
+  gain.gain.exponentialRampToValueAtTime(peakVolume, startTime + 0.012);
+  gain.gain.setValueAtTime(peakVolume, startTime + Math.max(0.02, duration - 0.05));
+  gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+  oscillator.start(startTime);
+  oscillator.stop(startTime + duration + 0.02);
 }
 
 function clearDefenseTimeouts() {
@@ -2113,6 +2156,7 @@ function startAttackTutorial() {
 
     attackState.timeLeft -= 1;
     renderAttackScreen();
+    playAttackTimerBeep(attackState.timeLeft);
 
     if (attackState.timeLeft <= 0 && attackState.hp > 0) {
       failAttackTutorial();
@@ -2571,6 +2615,10 @@ function initBackgroundMusic() {
 
   const unlock = () => {
     hasBgmInteraction = true;
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass && !timerAudioContext) {
+      timerAudioContext = new AudioContextClass();
+    }
     syncBackgroundMusic();
   };
   document.addEventListener('pointerdown', unlock, { once: true });
