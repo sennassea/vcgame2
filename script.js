@@ -317,7 +317,12 @@ let settingsReturnScreen = 'attack';
 let gameState = loadGameState();
 let attackState = createAttackState();
 let defenseState = { isRunning: false };
-let bgmTracks = null;
+let bgmAudioContext = null;
+let bgmMasterGain = null;
+let bgmBuffers = {};
+let bgmSourceNode = null;
+let bgmLoadingPromise = null;
+let bgmFallbackTracks = null;
 let activeBgmKey = '';
 let hasBgmInteraction = false;
 let timerAudioContext = null;
@@ -2981,33 +2986,103 @@ function getDesiredBgmKey() {
 }
 
 function syncBgmVolume() {
-  if (!bgmTracks) return;
-  Object.entries(bgmTracks).forEach(([key, audio]) => {
-    audio.volume = getBgmVolume(key);
+  if (bgmFallbackTracks) {
+    Object.entries(bgmFallbackTracks).forEach(([key, audio]) => {
+      audio.volume = getBgmVolume(key);
+    });
+    return;
+  }
+  if (!bgmAudioContext || !bgmMasterGain) return;
+  const desiredKey = activeBgmKey || getDesiredBgmKey();
+  const targetVolume = getBgmVolume(desiredKey);
+  bgmMasterGain.gain.cancelScheduledValues(bgmAudioContext.currentTime);
+  bgmMasterGain.gain.setValueAtTime(targetVolume, bgmAudioContext.currentTime);
+}
+
+async function loadBgmBuffers() {
+  if (bgmLoadingPromise) return bgmLoadingPromise;
+  bgmLoadingPromise = Promise.all(
+    Object.entries(BGM_SOURCES).map(async ([key, source]) => {
+      const audioData = await loadAudioArrayBuffer(source);
+      const buffer = await bgmAudioContext.decodeAudioData(audioData);
+      bgmBuffers[key] = buffer;
+    })
+  );
+  return bgmLoadingPromise;
+}
+
+async function loadAudioArrayBuffer(source) {
+  try {
+    const response = await fetch(source);
+    if (response.ok) return response.arrayBuffer();
+  } catch {}
+
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open('GET', source, true);
+    request.responseType = 'arraybuffer';
+    request.onload = () => {
+      if (request.response) resolve(request.response);
+      else reject(new Error(`배경음악을 불러오지 못했습니다: ${source}`));
+    };
+    request.onerror = () => reject(new Error(`배경음악을 불러오지 못했습니다: ${source}`));
+    request.send();
   });
 }
 
-async function startBackgroundMusic() {
-  if (!bgmTracks || !hasBgmInteraction) return;
+function playBgmBuffer(trackKey) {
+  const buffer = bgmBuffers[trackKey];
+  if (!bgmAudioContext || !bgmMasterGain || !buffer) return;
 
-  const desiredKey = getDesiredBgmKey();
-  const desiredTrack = bgmTracks[desiredKey];
-  if (!desiredTrack) return;
+  if (bgmSourceNode) {
+    try {
+      bgmSourceNode.stop();
+    } catch {}
+    bgmSourceNode.disconnect();
+  }
 
+  const sourceNode = bgmAudioContext.createBufferSource();
+  sourceNode.buffer = buffer;
+  sourceNode.loop = true;
+  sourceNode.connect(bgmMasterGain);
+  sourceNode.start();
+  bgmSourceNode = sourceNode;
+  activeBgmKey = trackKey;
   syncBgmVolume();
+}
 
-  Object.entries(bgmTracks).forEach(([key, audio]) => {
-    if (key !== desiredKey) audio.pause();
-  });
-
-  if (activeBgmKey !== desiredKey) {
-    desiredTrack.currentTime = 0;
-    activeBgmKey = desiredKey;
+async function startBackgroundMusic() {
+  if (!hasBgmInteraction || isAppPaused) return;
+  if (bgmFallbackTracks) {
+    const desiredKey = getDesiredBgmKey();
+    Object.entries(bgmFallbackTracks).forEach(([key, audio]) => {
+      if (key !== desiredKey) audio.pause();
+    });
+    const desiredTrack = bgmFallbackTracks[desiredKey];
+    if (activeBgmKey !== desiredKey) {
+      desiredTrack.currentTime = 0;
+      activeBgmKey = desiredKey;
+    }
+    syncBgmVolume();
+    if (desiredTrack.paused) await desiredTrack.play();
+    return;
   }
 
-  if (desiredTrack.paused) {
-    await desiredTrack.play();
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
+
+  if (!bgmAudioContext) {
+    bgmAudioContext = new AudioContextClass();
+    bgmMasterGain = bgmAudioContext.createGain();
+    bgmMasterGain.connect(bgmAudioContext.destination);
   }
+  if (bgmAudioContext.state === 'suspended') {
+    await bgmAudioContext.resume();
+  }
+  await loadBgmBuffers();
+  const desiredKey = getDesiredBgmKey();
+  if (activeBgmKey !== desiredKey || !bgmSourceNode) playBgmBuffer(desiredKey);
+  else syncBgmVolume();
 }
 
 function syncBackgroundMusic() {
@@ -3015,14 +3090,16 @@ function syncBackgroundMusic() {
 }
 
 function initBackgroundMusic() {
-  bgmTracks = Object.fromEntries(
-    Object.entries(BGM_SOURCES).map(([key, source]) => {
-      const audio = new Audio(source);
-      audio.loop = true;
-      audio.preload = 'auto';
-      return [key, audio];
-    })
-  );
+  if (location.protocol === 'file:') {
+    bgmFallbackTracks = Object.fromEntries(
+      Object.entries(BGM_SOURCES).map(([key, source]) => {
+        const audio = new Audio(source);
+        audio.loop = true;
+        audio.preload = 'auto';
+        return [key, audio];
+      })
+    );
+  }
   sfxTracks = Object.fromEntries(
     Object.entries(SFX_SOURCES).map(([key, source]) => {
       const audio = new Audio(source);
@@ -3035,6 +3112,12 @@ function initBackgroundMusic() {
   const unlock = () => {
     hasBgmInteraction = true;
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!bgmFallbackTracks && AudioContextClass && !bgmAudioContext) {
+      bgmAudioContext = new AudioContextClass();
+      bgmMasterGain = bgmAudioContext.createGain();
+      bgmMasterGain.connect(bgmAudioContext.destination);
+      bgmAudioContext.resume().catch(() => {});
+    }
     if (AudioContextClass && !timerAudioContext) {
       timerAudioContext = new AudioContextClass();
     }
@@ -3255,7 +3338,8 @@ function pauseAppRuntime() {
     stopDefenseMode();
   }
 
-  Object.values(bgmTracks ?? {}).forEach((audio) => audio.pause());
+  Object.values(bgmFallbackTracks ?? {}).forEach((audio) => audio.pause());
+  bgmAudioContext?.suspend().catch(() => {});
   timerAudioContext?.suspend().catch(() => {});
   saveGameState();
   flushExternalSave();
@@ -3275,6 +3359,9 @@ function resumeAppRuntime() {
 
   if (timerAudioContext?.state === 'suspended') {
     timerAudioContext.resume().catch(() => {});
+  }
+  if (bgmAudioContext?.state === 'suspended') {
+    bgmAudioContext.resume().catch(() => {});
   }
   syncBackgroundMusic();
   pauseStartedAt = 0;
@@ -3368,12 +3455,46 @@ function initBackNavigation() {
 }
 
 function initMobileInputHandling() {
+  const updateKeyboardInset = () => {
+    const viewport = window.visualViewport;
+    const keyboardInset = viewport
+      ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+      : 0;
+    const keyboardOpen = keyboardInset > 120;
+    document.body.classList.toggle('is-keyboard-open', keyboardOpen);
+    document.documentElement.style.setProperty(
+      '--keyboard-inset',
+      `${keyboardOpen ? Math.round(keyboardInset) : 0}px`
+    );
+  };
+
+  window.visualViewport?.addEventListener('resize', updateKeyboardInset);
+  window.visualViewport?.addEventListener('scroll', updateKeyboardInset);
+  window.addEventListener('orientationchange', updateKeyboardInset);
+
   document.addEventListener('focusin', (event) => {
     if (!event.target.matches('input[type="text"]')) return;
+    updateKeyboardInset();
     window.setTimeout(() => {
       event.target.scrollIntoView({ block: 'center', behavior: 'smooth' });
     }, 250);
   });
+  document.addEventListener('focusout', () => {
+    window.setTimeout(updateKeyboardInset, 120);
+  });
+}
+
+function initMediaSessionIsolation() {
+  if (!('mediaSession' in navigator)) return;
+  try {
+    navigator.mediaSession.metadata = null;
+    navigator.mediaSession.playbackState = 'none';
+    ['play', 'pause', 'stop', 'previoustrack', 'nexttrack'].forEach((action) => {
+      try {
+        navigator.mediaSession.setActionHandler(action, null);
+      } catch {}
+    });
+  } catch {}
 }
 
 function initPortraitOrientation() {
@@ -3391,6 +3512,7 @@ async function initGame() {
   initAppLifecycle();
   initBackNavigation();
   initMobileInputHandling();
+  initMediaSessionIsolation();
   initPortraitOrientation();
   initStartScreen();
   initRepresentativeScreen();
