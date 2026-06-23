@@ -106,6 +106,11 @@ const DEFAULT_GAME_STATE = {
   },
   settings: {
     volume: 70,
+    bgmVolumes: {
+      main: 70,
+      attack: 70,
+      defense: 70,
+    },
     muted: false,
   },
   claimedStageRewards: {},
@@ -307,6 +312,15 @@ let settingsReturnScreen = 'attack';
 let gameState = loadGameState();
 let attackState = createAttackState();
 let defenseState = { isRunning: false };
+let bgmTracks = null;
+let activeBgmKey = '';
+let hasBgmInteraction = false;
+
+const BGM_SOURCES = {
+  main: 'sounds/main-background.mp3',
+  attack: 'sounds/attack-mode.mp3',
+  defense: 'sounds/defense-mode.mp3',
+};
 
 function cloneDefaultState() {
   return JSON.parse(JSON.stringify(DEFAULT_GAME_STATE));
@@ -333,6 +347,11 @@ function loadGameState() {
     const parsedData = JSON.parse(savedData);
     const defaultState = cloneDefaultState();
     const savedFieldPlayers = parsedData.fieldPlayers ?? {};
+    const savedSettings = parsedData.settings ?? {};
+    const legacyVolume = Math.max(
+      0,
+      Math.min(100, normalizeNumber(savedSettings.volume, defaultState.settings.volume))
+    );
 
     return {
       ...defaultState,
@@ -357,7 +376,13 @@ function loadGameState() {
       },
       settings: {
         ...defaultState.settings,
-        ...(parsedData.settings ?? {}),
+        ...savedSettings,
+        bgmVolumes: {
+          main: legacyVolume,
+          attack: legacyVolume,
+          defense: legacyVolume,
+          ...(savedSettings.bgmVolumes ?? {}),
+        },
       },
       claimedStageRewards: {
         ...defaultState.claimedStageRewards,
@@ -838,6 +863,7 @@ function showScreen(screenName) {
     renderSettingsScreen();
   }
 
+  syncBackgroundMusic();
   renderTutorialGuidance();
 }
 
@@ -2321,7 +2347,9 @@ function initStartScreen() {
   });
 
   $('#closeQuickSettingsButton')?.addEventListener('click', hideQuickSettings);
-  $('#quickVolumeSlider')?.addEventListener('input', (event) => updateVolume(event.target.value));
+  $('#quickVolumeSlider')?.addEventListener('input', (event) => {
+    updateBgmVolume('main', event.target.value);
+  });
   $('#quickMuteToggleButton')?.addEventListener('click', toggleMute);
 }
 
@@ -2484,13 +2512,81 @@ function initAttackScreen() {
   });
 }
 
-function renderSettingsScreen() {
-  const volume = Math.max(0, Math.min(100, Math.floor(normalizeNumber(gameState.settings.volume, 70))));
-  const muted = Boolean(gameState.settings.muted);
-  const slider = $('#volumeSlider');
+function getBgmVolume(trackKey) {
+  if (gameState.settings.muted) return 0;
+  const volume = getStoredBgmVolume(trackKey);
+  return volume / 100;
+}
 
-  if (slider) slider.value = String(volume);
-  if ($('#volumeValue')) $('#volumeValue').textContent = muted ? '음소거' : `${volume}%`;
+function getDesiredBgmKey() {
+  const isStartScreen = !$('#startScreen')?.classList.contains('is-hidden');
+  if (isStartScreen) return 'main';
+  return gameState.currentMode === 'defense' ? 'defense' : 'attack';
+}
+
+function syncBgmVolume() {
+  if (!bgmTracks) return;
+  Object.entries(bgmTracks).forEach(([key, audio]) => {
+    audio.volume = getBgmVolume(key);
+  });
+}
+
+async function startBackgroundMusic() {
+  if (!bgmTracks || !hasBgmInteraction) return;
+
+  const desiredKey = getDesiredBgmKey();
+  const desiredTrack = bgmTracks[desiredKey];
+  if (!desiredTrack) return;
+
+  syncBgmVolume();
+
+  Object.entries(bgmTracks).forEach(([key, audio]) => {
+    if (key !== desiredKey) audio.pause();
+  });
+
+  if (activeBgmKey !== desiredKey) {
+    desiredTrack.currentTime = 0;
+    activeBgmKey = desiredKey;
+  }
+
+  if (desiredTrack.paused) {
+    await desiredTrack.play();
+  }
+}
+
+function syncBackgroundMusic() {
+  startBackgroundMusic().catch(() => {});
+}
+
+function initBackgroundMusic() {
+  bgmTracks = Object.fromEntries(
+    Object.entries(BGM_SOURCES).map(([key, source]) => {
+      const audio = new Audio(source);
+      audio.loop = true;
+      audio.preload = 'auto';
+      return [key, audio];
+    })
+  );
+  syncBgmVolume();
+
+  const unlock = () => {
+    hasBgmInteraction = true;
+    syncBackgroundMusic();
+  };
+  document.addEventListener('pointerdown', unlock, { once: true });
+  document.addEventListener('keydown', unlock, { once: true });
+}
+
+function renderSettingsScreen() {
+  const muted = Boolean(gameState.settings.muted);
+
+  Object.keys(BGM_SOURCES).forEach((key) => {
+    const volume = getStoredBgmVolume(key);
+    const slider = $(`#${key}VolumeSlider`);
+    const value = $(`#${key}VolumeValue`);
+    if (slider) slider.value = String(volume);
+    if (value) value.textContent = muted ? '음소거' : `${volume}%`;
+  });
   if ($('#muteIcon')) $('#muteIcon').textContent = muted ? '🔇' : '🔊';
   if ($('#muteLabel')) $('#muteLabel').textContent = muted ? '음소거 해제' : '음소거';
   renderQuickSettings();
@@ -2498,7 +2594,7 @@ function renderSettingsScreen() {
 }
 
 function renderQuickSettings() {
-  const volume = Math.max(0, Math.min(100, Math.floor(normalizeNumber(gameState.settings.volume, 70))));
+  const volume = getStoredBgmVolume('main');
   const muted = Boolean(gameState.settings.muted);
   const slider = $('#quickVolumeSlider');
 
@@ -2512,16 +2608,30 @@ function hideQuickSettings() {
   $('#quickSettingsModal')?.classList.add('is-hidden');
 }
 
-function updateVolume(value) {
-  gameState.settings.volume = Math.max(0, Math.min(100, Math.floor(normalizeNumber(value, 70))));
-  if (gameState.settings.volume > 0) gameState.settings.muted = false;
+function getStoredBgmVolume(trackKey) {
+  return Math.max(
+    0,
+    Math.min(100, Math.floor(normalizeNumber(gameState.settings.bgmVolumes?.[trackKey], 70)))
+  );
+}
+
+function updateBgmVolume(trackKey, value) {
+  if (!Object.hasOwn(BGM_SOURCES, trackKey)) return;
+  const volume = Math.max(0, Math.min(100, Math.floor(normalizeNumber(value, 70))));
+  gameState.settings.bgmVolumes ??= {};
+  gameState.settings.bgmVolumes[trackKey] = volume;
+  if (volume > 0) gameState.settings.muted = false;
   saveGameState();
+  startBackgroundMusic().catch(() => {});
+  syncBgmVolume();
   renderSettingsScreen();
 }
 
 function toggleMute() {
   gameState.settings.muted = !gameState.settings.muted;
   saveGameState();
+  startBackgroundMusic().catch(() => {});
+  syncBgmVolume();
   renderSettingsScreen();
   showToast(gameState.settings.muted ? '게임 소리가 음소거되었습니다.' : '게임 소리가 켜졌습니다.');
 }
@@ -2554,7 +2664,11 @@ function resetGameProgress() {
 }
 
 function initSettingsScreen() {
-  $('#volumeSlider')?.addEventListener('input', (event) => updateVolume(event.target.value));
+  Object.keys(BGM_SOURCES).forEach((key) => {
+    $(`#${key}VolumeSlider`)?.addEventListener('input', (event) => {
+      updateBgmVolume(key, event.target.value);
+    });
+  });
   $('#muteToggleButton')?.addEventListener('click', toggleMute);
   $('#resetGameButton')?.addEventListener('click', () => {
     $('#resetConfirmModal')?.classList.remove('is-hidden');
@@ -2633,6 +2747,7 @@ function initBottomNavigation() {
 }
 
 function initGame() {
+  initBackgroundMusic();
   initStartScreen();
   initRepresentativeScreen();
   initAttackScreen();

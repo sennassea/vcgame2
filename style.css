@@ -2173,13 +2173,19 @@ button {
 
 .quick-volume-row {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) 46px;
+  grid-template-columns: 62px minmax(0, 1fr) 46px;
   align-items: center;
   gap: 7px;
   margin: 22px 0 15px;
   padding: 12px;
   border-radius: 14px;
   background: rgba(0, 17, 40, 0.66);
+}
+
+.quick-volume-label {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .quick-volume-row .volume-slider {
@@ -2276,6 +2282,35 @@ button {
   width: 100%;
   margin: 20px 0 14px;
   accent-color: #ffd84d;
+}
+
+.track-volume-control {
+  margin-top: 16px;
+  padding: 12px 13px 4px;
+  border-radius: 14px;
+  background: rgba(0, 22, 50, 0.55);
+}
+
+.track-volume-control > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.track-volume-control label {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.track-volume-control strong {
+  color: #ffdc65;
+  font-size: 13px;
+}
+
+.track-volume-control .volume-slider {
+  margin: 11px 0 8px;
 }
 
 .settings-option-button,
