@@ -5,9 +5,8 @@
 }
 
 :root {
-  --app-height: 100vh;
-  --screen-width: min(100vw, calc(var(--app-height) * 9 / 16), 520px);
-  --screen-height: min(var(--app-height), calc(100vw * 16 / 9), 924px);
+  --screen-width: min(100vw, calc(100vh * 9 / 16), 520px);
+  --screen-height: min(100vh, calc(100vw * 16 / 9), 924px);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
@@ -24,8 +23,7 @@
 html,
 body {
   width: 100%;
-  height: var(--app-height);
-  min-height: var(--app-height);
+  min-height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
   background: #03132b;
@@ -46,7 +44,7 @@ button {
 .game-shell {
   position: relative;
   width: 100vw;
-  height: var(--app-height);
+  height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -967,23 +965,6 @@ button {
 .player-management-card.is-tutorial-card-target {
   opacity: 1;
   filter: none;
-}
-
-body.is-keyboard-open .bottom-navigation {
-  visibility: hidden;
-  pointer-events: none;
-}
-
-body.is-keyboard-open .representative-scroll-area,
-body.is-keyboard-open .players-scroll-area,
-body.is-keyboard-open .settings-scroll-area {
-  padding-bottom: 24px;
-}
-
-@supports (height: 100dvh) {
-  :root {
-    --app-height: 100dvh;
-  }
 }
 
 .players-screen.is-return-game-guided .bottom-nav-button:not([data-target="game"]):not([data-target="settings"]) {

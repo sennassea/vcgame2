@@ -2814,6 +2814,23 @@ function handleBottomNavigation(button) {
     return;
   }
 
+  if (currentScreenId === 'settingsScreen' && isTutorialInProgress()) {
+    const isTutorialReturnTarget =
+      (settingsReturnScreen === 'attack' && target === 'game') ||
+      (['players', 'representative'].includes(settingsReturnScreen) && target === 'players');
+
+    if (isTutorialReturnTarget) {
+      if (settingsReturnScreen === 'attack') {
+        if (gameState.currentMode === 'defense') startDefenseMode();
+        else startAttackTutorial();
+      } else {
+        showScreen(settingsReturnScreen);
+      }
+      renderTutorialGuidance();
+      return;
+    }
+  }
+
   if (gameState.tutorialFlags.playerTabGuidanceActive) {
     if (target === 'players') {
       gameState.tutorialFlags.playerTabGuidanceActive = false;
@@ -3350,21 +3367,7 @@ function initBackNavigation() {
   });
 }
 
-function updateViewportMetrics() {
-  const viewport = window.visualViewport;
-  const height = viewport?.height ?? window.innerHeight;
-  document.documentElement.style.setProperty('--app-height', `${Math.round(height)}px`);
-  const keyboardOpen = Boolean(viewport && window.innerHeight - viewport.height > 150);
-  document.body.classList.toggle('is-keyboard-open', keyboardOpen);
-}
-
-function initMobileViewport() {
-  updateViewportMetrics();
-  window.addEventListener('resize', updateViewportMetrics);
-  window.addEventListener('orientationchange', updateViewportMetrics);
-  window.visualViewport?.addEventListener('resize', updateViewportMetrics);
-  window.visualViewport?.addEventListener('scroll', updateViewportMetrics);
-
+function initMobileInputHandling() {
   document.addEventListener('focusin', (event) => {
     if (!event.target.matches('input[type="text"]')) return;
     window.setTimeout(() => {
@@ -3380,15 +3383,6 @@ function initPortraitOrientation() {
   document.addEventListener('pointerdown', lockPortrait, { once: true });
 }
 
-function applyAssetLoadingHints() {
-  $$('img').forEach((image) => {
-    image.decoding = 'async';
-    if (!image.closest('#startScreen') && !image.closest('#attackScreen')) {
-      image.loading = 'lazy';
-    }
-  });
-}
-
 async function initGame() {
   await restoreExternalSaveIfNeeded();
   initBackgroundMusic();
@@ -3396,9 +3390,8 @@ async function initGame() {
   initStatusInfoTooltips();
   initAppLifecycle();
   initBackNavigation();
-  initMobileViewport();
+  initMobileInputHandling();
   initPortraitOrientation();
-  applyAssetLoadingHints();
   initStartScreen();
   initRepresentativeScreen();
   initAttackScreen();

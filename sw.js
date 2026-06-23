@@ -1,4 +1,5 @@
-const CACHE_VERSION = 'baseball-monster-hunter-v1';
+const CACHE_VERSION = 'baseball-monster-hunter-v3';
+const CACHE_PREFIX = 'baseball-monster-hunter-';
 const APP_SHELL = [
   './',
   './index.html',
@@ -30,7 +31,7 @@ self.addEventListener('activate', (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key !== CACHE_VERSION)
+            .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_VERSION)
             .map((key) => caches.delete(key))
         )
       )
@@ -45,30 +46,20 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
   if (request.headers.has('range')) return;
 
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(() => caches.match('./index.html'))
-    );
-    return;
-  }
-
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) return cachedResponse;
-
-      return fetch(request).then((response) => {
+    fetch(request)
+      .then((response) => {
         if (response.ok) {
           const copy = response.clone();
           caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy));
         }
         return response;
-      });
-    })
+      })
+      .catch(async () => {
+        const cachedResponse = await caches.match(request);
+        if (cachedResponse) return cachedResponse;
+        if (request.mode === 'navigate') return caches.match('./index.html');
+        throw new Error(`오프라인 캐시에 없는 파일입니다: ${url.pathname}`);
+      })
   );
 });
