@@ -7,7 +7,8 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <title>야구 몬스터 헌터</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -631,5 +632,14 @@
   </main>
 
   <script src="script.js"></script>
+  <script>
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch((error) => {
+          console.warn('서비스 워커 등록에 실패했습니다.', error);
+        });
+      });
+    }
+  </script>
 </body>
 </html>

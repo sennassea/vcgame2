@@ -1,0 +1,28 @@
+{
+  "id": "./",
+  "name": "야구 몬스터 헌터",
+  "short_name": "야구 몬헌",
+  "description": "선수를 육성해 몬스터 리그를 돌파하는 세로형 야구 게임",
+  "lang": "ko-KR",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#03132b",
+  "theme_color": "#03132b",
+  "categories": ["games", "sports"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1230,7 +1230,13 @@ function showScreen(screenName) {
 
   if (screenName !== 'attack') {
     stopAttackTutorial();
-    stopDefenseMode();
+    const shouldKeepDefenseRunning =
+      screenName !== 'start' &&
+      gameState.currentMode === 'defense' &&
+      defenseState.isRunning;
+    if (!shouldKeepDefenseRunning) {
+      stopDefenseMode();
+    }
     setDefenseSupportPending(false);
     setPlayerTabGuidance(false);
     hideAllModals();
@@ -3246,7 +3252,7 @@ function resumeAppRuntime() {
 
   if (modeToResume === 'attack' && lastVisibleScreen === 'attack') {
     resumeAttackRuntime();
-  } else if (modeToResume === 'defense' && lastVisibleScreen === 'attack') {
+  } else if (modeToResume === 'defense' && lastVisibleScreen !== 'start') {
     resumeDefenseRuntime();
   }
 
