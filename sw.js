@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'baseball-monster-hunter-v6-web-original';
+const CACHE_VERSION = 'baseball-monster-hunter-v7-light-only';
 const CACHE_PREFIX = 'baseball-monster-hunter-';
 const APP_SHELL = [
   './',

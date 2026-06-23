@@ -5,6 +5,7 @@
 }
 
 :root {
+  color-scheme: only light;
   --screen-width: min(100vw, calc(100vh * 9 / 16), 520px);
   --screen-height: min(100vh, calc(100vw * 16 / 9), 924px);
   --safe-top: env(safe-area-inset-top, 0px);
